@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Root-Ordner
-ROOT_DIR="lerobot-vision"
+ROOT_DIR="."
 WS_SRC="$ROOT_DIR/ws/src/lerobot_vision"
 
 echo "Erstelle Projektstruktur unter $ROOT_DIR …"
