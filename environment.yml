@@ -1,0 +1,11 @@
+name: lerobot-vision
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - ffmpeg
+  - pip:
+      - openai
+      - opencv-python
+      - numpy
