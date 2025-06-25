@@ -1,0 +1,13 @@
+[submodule "external/OpenYOLO3D"]
+	path = external/OpenYOLO3D
+	url = https://github.com/aminebdj/OpenYOLO3D.git
+[submodule "external/stereoanywhere"]
+	path = external/stereoanywhere
+	url = https://github.com/bartn8/stereoanywhere.git
+[submodule "external/lerobot"]
+	path = external/lerobot
+	url = https://github.com/huggingface/lerobot.git
+[submodule "external/isaac_ros_pose_estimation"]
+	path = external/isaac_ros_pose_estimation
+	url = https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_pose_estimation.git
+	branch = release-3.2
