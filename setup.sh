@@ -18,7 +18,8 @@ conda activate lerobot-vision
 conda install -y ffmpeg -c conda-forge                                            # 
 
 echo "=== 3. Repositories klonen ==="
-mkdir -p libs && cd libs
+#mkdir -p libs 
+cd libs
 git clone https://github.com/aminebdj/OpenYOLO3D.git                               # :contentReference[oaicite:9]{index=9}
 git clone https://github.com/bartn8/stereoanywhere.git                             # :contentReference[oaicite:10]{index=10}
 git clone https://github.com/huggingface/lerobot.git                               # 
