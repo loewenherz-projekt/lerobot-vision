@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: lerobot-vision
+          environment-file: environment.yml
+          python-version: 3.10
+          auto-update-conda: true
+      - name: Install ROS 2
+        run: |
+          sudo apt update
+          sudo apt install ros-humble-desktop -y
+          source /opt/ros/humble/setup.bash
+          sudo apt install python3-colcon-common-extensions -y
+      - name: rosdep
+        run: |
+          cd ws
+          rosdep update
+          rosdep install --from-paths src --ignore-src -r -y
+      - name: Build
+        run: |
+          source /opt/ros/humble/setup.bash
+          cd ws
+          colcon build --symlink-install
+      - name: Lint
+        run: |
+          pip install flake8 black
+          flake8 --max-line-length=79
+          black --check .
+      - name: Test
+        run: |
+          pip install pytest pytest-cov
+          pytest
+      - name: Coverage
+        uses: codecov/codecov-action@v3

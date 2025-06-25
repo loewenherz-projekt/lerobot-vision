@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>lerobot_vision</name>
+  <version>0.1.0</version>
+  <description>LeRobot vision package.</description>
+  <maintainer email="user@example.com">User</maintainer>
+  <license>MIT</license>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>vision_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>trajectory_msgs</exec_depend>
+</package>
