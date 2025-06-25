@@ -1,0 +1,7 @@
+numpy
+opencv-python-headless
+openai
+pytest
+pytest-cov
+flake8
+black

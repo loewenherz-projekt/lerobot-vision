@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>lerobot_vision</name>
+  <version>0.1.0</version>
+  <description>Headless Roboter-Vision mit LLM-gesteuerter Pick&amp;Place</description>
+  <maintainer email="you@example.com">Ihr Name</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>rclpy</depend>
+  <depend>sensor_msgs</depend>
+  <depend>vision_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>cv_bridge</depend>
+  <depend>image_transport</depend>
+  <depend>ament_index_cpp</depend>
+
+  <exec_depend>openyolo3d</exec_depend>
+  <exec_depend>stereoanywhere</exec_depend>
+  <exec_depend>lerobot</exec_depend>
+  <exec_depend>isaac_ros_pose_estimation</exec_depend>
+</package>
