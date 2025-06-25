@@ -1,0 +1,41 @@
+"""NLP node using OpenAI API."""
+
+from __future__ import annotations
+
+import json
+import logging
+from typing import Dict, List
+
+import openai
+import rclpy
+from rclpy.node import Node
+from std_msgs.msg import String
+
+
+class NlpNode(Node):
+    """Node that generates actions from scene descriptions."""
+
+    def __init__(self) -> None:
+        super().__init__("nlp_node")
+        self.sub = self.create_subscription(String, "/robot/vision/scene", self._cb, 10)
+        self.pub = self.create_publisher(String, "/robot/vision/actions", 10)
+
+    def _cb(self, msg: String) -> None:
+        try:
+            actions = self._call_llm(msg.data)
+            self.pub.publish(String(data=json.dumps(actions)))
+        except Exception as exc:  # pragma: no cover
+            logging.error("LLM call failed: %s", exc)
+
+    def _call_llm(self, scene_json: str) -> List[Dict]:
+        """Call OpenAI LLM to plan actions."""
+        try:
+            resp = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=[{"role": "user", "content": scene_json}],
+                functions=[],
+            )
+            return resp["choices"][0]["message"]["content"]  # type: ignore
+        except Exception as exc:
+            logging.error("OpenAI API error: %s", exc)
+            raise

@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>lerobot_vision</name>
+  <version>0.0.1</version>
+  <description>LeRobot Vision package.</description>
+  <maintainer email="example@example.com">Maintainer</maintainer>
+  <license>Apache-2.0</license>
+  <buildtool_depend>ament_python</buildtool_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>vision_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>trajectory_msgs</exec_depend>
+</package>
