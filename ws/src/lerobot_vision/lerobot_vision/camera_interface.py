@@ -12,7 +12,7 @@ import numpy as np
 
 
 class StereoCamera:
-    """Stereo camera using OpenCV VideoCapture."""
+    """Stereo camera using OpenCV ``VideoCapture``."""
 
     camera_matrix = np.eye(3)
     dist_coeffs = np.zeros(5)
@@ -23,13 +23,26 @@ class StereoCamera:
         right_idx: int = 1,
         config_path: str | None = None,
     ) -> None:
+        """Initialize the stereo camera interface.
+
+        Args:
+            left_idx: Device index of the left camera.
+            right_idx: Device index of the right camera.
+            config_path: Optional path to a YAML file containing camera
+                calibration parameters.
+        """
         if config_path:
             self._load_params(config_path)
         self.left_cap = cv2.VideoCapture(left_idx)
         self.right_cap = cv2.VideoCapture(right_idx)
 
     def get_frames(self) -> Tuple[np.ndarray, np.ndarray]:
-        """Return undistorted frames from both cameras."""
+        """Retrieve frames from both cameras.
+
+        Returns:
+            A tuple ``(left, right)`` of undistorted images captured from the
+            left and right cameras respectively.
+        """
         ret_left, left = self.left_cap.read()
         ret_right, right = self.right_cap.read()
         if not ret_left or not ret_right:
@@ -40,7 +53,7 @@ class StereoCamera:
         return left_ud, right_ud
 
     def release(self) -> None:
-        """Release camera resources."""
+        """Release underlying camera resources."""
         self.left_cap.release()
         self.right_cap.release()
 

@@ -20,6 +20,7 @@ class PlannerNode(Node):
     """Plan trajectories based on actions."""
 
     def __init__(self) -> None:
+        """Initialize the planner node."""
         super().__init__("planner_node")
         self.declare_parameter("move_group", "manipulator")
         group_name = (
@@ -44,7 +45,14 @@ class PlannerNode(Node):
             logging.error("Planning failed: %s", exc)
 
     def _plan_actions(self, actions_json: str) -> JointTrajectory:
-        """Plan trajectory."""
+        """Plan a trajectory from a JSON description of actions.
+
+        Args:
+            actions_json: JSON string containing planned actions.
+
+        Returns:
+            A ``JointTrajectory`` message describing the motion plan.
+        """
         if self.group is None:
             raise RuntimeError("MoveIt not available")
         actions = json.loads(actions_json)
