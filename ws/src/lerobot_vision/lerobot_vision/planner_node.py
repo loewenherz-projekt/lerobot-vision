@@ -22,7 +22,9 @@ class PlannerNode(Node):
     def __init__(self) -> None:
         super().__init__("planner_node")
         self.declare_parameter("move_group", "manipulator")
-        group_name = self.get_parameter("move_group").get_parameter_value().string_value
+        group_name = (
+            self.get_parameter("move_group").get_parameter_value().string_value
+        )
         self.sub = self.create_subscription(
             String, "/robot/vision/actions", self._cb, 10
         )

@@ -48,8 +48,12 @@ class StereoCamera:
     def _load_params(cls, path: str) -> None:
         try:
             data = yaml.safe_load(Path(path).read_text())
-            cls.camera_matrix = np.array(data.get("camera_matrix", cls.camera_matrix))
-            cls.dist_coeffs = np.array(data.get("dist_coeffs", cls.dist_coeffs))
+            cls.camera_matrix = np.array(
+                data.get("camera_matrix", cls.camera_matrix)
+            )
+            cls.dist_coeffs = np.array(
+                data.get("dist_coeffs", cls.dist_coeffs)
+            )
         except Exception as exc:  # pragma: no cover - config optional
             logging.error("Failed to load camera parameters: %s", exc)
         return None

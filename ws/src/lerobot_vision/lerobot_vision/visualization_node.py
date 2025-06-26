@@ -28,10 +28,14 @@ class VisualizationNode(Node):
         self.declare_parameter("camera_config", str(default_cfg))
         self.declare_parameter("yolo_checkpoint", checkpoint_dir)
         config_path = (
-            self.get_parameter("camera_config").get_parameter_value().string_value
+            self.get_parameter("camera_config")
+            .get_parameter_value()
+            .string_value
         )
         ckpt_path = (
-            self.get_parameter("yolo_checkpoint").get_parameter_value().string_value
+            self.get_parameter("yolo_checkpoint")
+            .get_parameter_value()
+            .string_value
         )
         self.bridge = CvBridge()
         self.camera = StereoCamera(config_path=config_path)
