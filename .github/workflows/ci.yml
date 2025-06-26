@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: lerobot-vision
+          environment-file: environment.yml
+          python-version: 3.10
+      - name: Install ROS 2
+        run: |
+          sudo apt update
+          sudo apt install ros-humble-desktop -y
+          echo "source /opt/ros/humble/setup.bash" >> $HOME/.bashrc
+          source $HOME/.bashrc
+      - name: rosdep install
+        run: |
+          source /opt/ros/humble/setup.bash
+          rosdep update
+          rosdep install --from-paths ws/src --ignore-src -r -y
+      - name: Build
+        run: |
+          source /opt/ros/humble/setup.bash
+          colcon build --symlink-install --workspace ws
+      - name: Lint
+        run: flake8 ws/src/lerobot_vision
+      - name: Format
+        run: black --check ws/src/lerobot_vision
+      - name: Tests
+        run: pytest
+      - name: Coverage
+        uses: codecov/codecov-action@v3
