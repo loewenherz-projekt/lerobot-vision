@@ -24,7 +24,9 @@ class ControlNode(Node):
         if Robot is None:
             raise RuntimeError("lerobot unavailable")
         p_port = self.get_parameter("port").get_parameter_value().string_value
-        p_id = self.get_parameter("robot_id").get_parameter_value().integer_value
+        p_id = (
+            self.get_parameter("robot_id").get_parameter_value().integer_value
+        )
         self.robot = Robot(p_port, p_id)
         self.sub = self.create_subscription(
             JointTrajectory,
