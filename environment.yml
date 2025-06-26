@@ -1,0 +1,17 @@
+name: lerobot-vision
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.10
+  - ffmpeg
+  - pip
+  - pip:
+      - openai
+      - numpy
+      - opencv-python-headless
+      - PyYAML
+      - pytest
+      - pytest-cov
+      - flake8
+      - black
