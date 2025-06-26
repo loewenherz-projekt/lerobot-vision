@@ -1,9 +1,6 @@
-rclpy
-cv_bridge
-sensor_msgs
-vision_msgs
-trajectory_msgs
 openai
+numpy
+opencv-python-headless
 pytest
 pytest-cov
 flake8

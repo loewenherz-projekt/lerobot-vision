@@ -16,6 +16,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+      - name: Install ROS 2 dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y curl gnupg lsb-release
+          sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key | sudo apt-key add -
+          echo "deb [arch=$(dpkg --print-architecture)] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/ros2.list
+          sudo apt update
+          sudo apt install -y ros-humble-ros-base
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Lint
