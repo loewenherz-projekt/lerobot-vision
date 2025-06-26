@@ -1,0 +1,11 @@
+rclpy
+cv_bridge
+sensor_msgs
+vision_msgs
+trajectory_msgs
+openai
+pytest
+pytest-cov
+flake8
+black
+PyYAML
