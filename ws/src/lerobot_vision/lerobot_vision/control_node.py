@@ -18,6 +18,12 @@ class ControlNode(Node):
     """Node controlling robot via lerobot SDK."""
 
     def __init__(self, port: str = "/dev/ttyUSB0", robot_id: int = 1) -> None:
+        """Initialize the control node.
+
+        Args:
+            port: Serial port of the robot controller.
+            robot_id: Identifier of the robot.
+        """
         super().__init__("control_node")
         self.declare_parameter("port", port)
         self.declare_parameter("robot_id", robot_id)

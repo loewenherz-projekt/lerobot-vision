@@ -18,7 +18,11 @@ class DepthEngine:
     """Compute depth from stereo images."""
 
     def __init__(self, model_path: Optional[str] = None) -> None:
-        """Create engine optionally loading a custom model."""
+        """Create the depth engine.
+
+        Args:
+            model_path: Optional path to a trained ``StereoAnywhere`` model.
+        """
         self.model_path = model_path
         if isinstance(StereoAnywhere, type):
             try:
@@ -31,7 +35,15 @@ class DepthEngine:
             logging.error("StereoAnywhere is unavailable")
 
     def compute_depth(self, left: np.ndarray, right: np.ndarray) -> np.ndarray:
-        """Compute depth map."""
+        """Compute a depth map from a pair of images.
+
+        Args:
+            left: Left image array.
+            right: Right image array.
+
+        Returns:
+            The computed depth map.
+        """
         if (
             self.engine is None
             or not isinstance(left, np.ndarray)

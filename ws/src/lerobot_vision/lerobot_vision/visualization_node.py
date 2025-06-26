@@ -22,6 +22,11 @@ class VisualizationNode(Node):
     """Publishes overlay images."""
 
     def __init__(self, checkpoint_dir: str) -> None:
+        """Initialize the visualization node.
+
+        Args:
+            checkpoint_dir: Directory containing the YOLOv3-3D checkpoints.
+        """
         super().__init__("visualization_node")
         base = Path(__file__).resolve().parent.parent
         default_cfg = base / "config" / "camera.yaml"
@@ -58,6 +63,16 @@ class VisualizationNode(Node):
     def _draw_overlay(
         self, image: np.ndarray, masks: List[np.ndarray], labels: List[str]
     ) -> np.ndarray:
+        """Draw segmentation overlays on an image.
+
+        Args:
+            image: Source image on which to draw.
+            masks: List of binary masks corresponding to objects.
+            labels: Labels associated with each mask.
+
+        Returns:
+            The image with overlays applied.
+        """
         for mask, label in zip(masks, labels):
             pts = np.column_stack(np.nonzero(mask > 0)).astype(np.float32)
             if pts.size == 0:

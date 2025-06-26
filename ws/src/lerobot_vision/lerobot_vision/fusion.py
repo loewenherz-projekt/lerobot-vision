@@ -13,6 +13,11 @@ class FusionModule:
     """Fuse masks and poses and publish ROS messages."""
 
     def __init__(self, node: Node) -> None:
+        """Create the fusion module.
+
+        Args:
+            node: The ROS2 node used to create publishers.
+        """
         self.node = node
         self.pc_pub = node.create_publisher(
             PointCloud2, "/robot/vision/points", 10
@@ -22,7 +27,13 @@ class FusionModule:
         )
 
     def publish(self, masks: Any, labels: List[str], poses: Any) -> None:
-        """Publish fused outputs."""
+        """Publish fused point clouds and detections.
+
+        Args:
+            masks: Instance masks produced by an object detector.
+            labels: Semantic labels corresponding to ``masks``.
+            poses: Object poses associated with each mask.
+        """
         pc = self._masks_to_pointcloud2(masks)
         detections = self._make_detections(masks, labels, poses)
         self.pc_pub.publish(pc)

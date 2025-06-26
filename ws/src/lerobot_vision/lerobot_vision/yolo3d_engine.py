@@ -19,6 +19,11 @@ class Yolo3DEngine:
     """YOLO3D wrapper class."""
 
     def __init__(self, checkpoint_dir: str) -> None:
+        """Initialize the engine using the given checkpoint directory.
+
+        Args:
+            checkpoint_dir: Directory containing pretrained YOLO3D weights.
+        """
         if not os.path.isdir(checkpoint_dir):
             raise FileNotFoundError(checkpoint_dir)
         if OpenYolo3D is None:
@@ -28,7 +33,16 @@ class Yolo3DEngine:
     def segment(
         self, images: List[np.ndarray], depth_map: np.ndarray
     ) -> Tuple[List[np.ndarray], List[str]]:
-        """Segment objects using images and depth map."""
+        """Segment objects using images and a depth map.
+
+        Args:
+            images: List of RGB images.
+            depth_map: Depth map corresponding to ``images``.
+
+        Returns:
+            A tuple ``(masks, labels)`` with segmentation masks and their
+            associated labels.
+        """
         dmap = depth_map
         if not isinstance(images, list) or not isinstance(dmap, np.ndarray):
             raise ValueError("Invalid inputs")

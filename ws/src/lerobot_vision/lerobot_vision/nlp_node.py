@@ -15,6 +15,7 @@ class NlpNode(Node):
     """Node that generates actions from scene descriptions."""
 
     def __init__(self) -> None:
+        """Initialize the NLP node."""
         super().__init__("nlp_node")
         self.sub = self.create_subscription(
             String,
@@ -32,7 +33,14 @@ class NlpNode(Node):
             logging.error("LLM call failed: %s", exc)
 
     def _call_llm(self, scene_json: str) -> List[Dict]:
-        """Call OpenAI LLM to plan actions."""
+        """Call OpenAI LLM to plan actions.
+
+        Args:
+            scene_json: JSON string describing the scene.
+
+        Returns:
+            A list of action dictionaries returned by the language model.
+        """
         try:
             resp = openai.ChatCompletion.create(
                 model="gpt-4",
