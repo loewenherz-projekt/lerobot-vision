@@ -1,3 +1,4 @@
+# ws/src/lerobot_vision/lerobot_vision/fusion.py
 """Fusion of segmentation masks into ROS messages."""
 
 from __future__ import annotations

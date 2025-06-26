@@ -1,3 +1,4 @@
+# tests/test_camera_interface.py
 import numpy as np
 import pytest
 

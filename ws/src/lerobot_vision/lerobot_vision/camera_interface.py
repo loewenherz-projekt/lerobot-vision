@@ -1,3 +1,4 @@
+# ws/src/lerobot_vision/lerobot_vision/camera_interface.py
 """Camera interface for stereo cameras."""
 
 from __future__ import annotations

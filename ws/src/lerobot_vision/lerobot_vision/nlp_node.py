@@ -1,3 +1,4 @@
+# ws/src/lerobot_vision/lerobot_vision/nlp_node.py
 """NLP node using OpenAI API."""
 
 from __future__ import annotations
