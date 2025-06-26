@@ -22,7 +22,8 @@ def generate_launch_description():
                 parameters=[
                     {
                         "camera_config": (
-                            "$(find-pkg-share lerobot_vision)/config/" "camera.yaml"
+                            "$(find-pkg-share lerobot_vision)/config/"
+                            "camera.yaml"
                         )
                     }
                 ],

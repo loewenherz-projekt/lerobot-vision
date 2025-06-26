@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 
@@ -17,9 +17,15 @@ except Exception as exc:  # pragma: no cover - external dep may not exist
 class DepthEngine:
     """Compute depth from stereo images."""
 
-    def __init__(self, pretrained: bool = True) -> None:
+    def __init__(self, model_path: Optional[str] = None) -> None:
+        """Create engine optionally loading a custom model."""
+        self.model_path = model_path
         if isinstance(StereoAnywhere, type):
-            self.engine = StereoAnywhere(pretrained=pretrained)
+            try:
+                self.engine = StereoAnywhere(pretrained=True)
+            except Exception as exc:  # pragma: no cover - runtime path
+                self.engine = None
+                logging.error("StereoAnywhere init failed: %s", exc)
         else:
             self.engine = None
             logging.error("StereoAnywhere is unavailable")

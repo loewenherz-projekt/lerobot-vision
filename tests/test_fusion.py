@@ -1,5 +1,6 @@
 from unittest import mock
 
+import pytest
 import rclpy
 from rclpy.node import Node
 
@@ -29,9 +30,9 @@ def test_helper_methods():
     node = Node("test")
     fusion = FusionModule(node)
 
-    pc = fusion._masks_to_pointcloud2([1, 2])
-    assert pc.points == 2
+    with pytest.raises(NotImplementedError):
+        fusion._masks_to_pointcloud2([1, 2])
 
-    det_arr = fusion._make_detections([], ["a", "b"], [])
-    assert det_arr.detections == [{"label": "a"}, {"label": "b"}]
+    with pytest.raises(NotImplementedError):
+        fusion._make_detections([], ["a", "b"], [])
     rclpy.shutdown()

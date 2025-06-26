@@ -59,20 +59,28 @@ class VisualizationNode(Node):
         self, image: np.ndarray, masks: List[np.ndarray], labels: List[str]
     ) -> np.ndarray:
         for mask, label in zip(masks, labels):
-            pts, _ = cv2.findContours(
-                mask,
-                cv2.RETR_EXTERNAL,
-                cv2.CHAIN_APPROX_SIMPLE,
+            pts = np.column_stack(np.nonzero(mask > 0)).astype(np.float32)
+            if pts.size == 0:
+                continue
+            points_3d = np.hstack(
+                (pts[:, [1, 0]], np.zeros((pts.shape[0], 1)))
             )
-            cv2.polylines(image, pts, True, (0, 255, 0), 2)
-            if pts:
-                cv2.putText(
-                    image,
-                    label,
-                    tuple(pts[0][0][0]),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    1,
-                    (0, 255, 0),
-                    2,
-                )
+            proj, _ = cv2.projectPoints(
+                points_3d,
+                np.zeros(3, dtype=np.float32),
+                np.zeros(3, dtype=np.float32),
+                StereoCamera.camera_matrix,
+                StereoCamera.dist_coeffs,
+            )
+            proj = proj.reshape(-1, 1, 2).astype(int)
+            cv2.polylines(image, [proj], True, (0, 255, 0), 2)
+            cv2.putText(
+                image,
+                label,
+                tuple(proj[0][0]),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                (0, 255, 0),
+                2,
+            )
         return image

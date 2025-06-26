@@ -4,7 +4,15 @@ import types
 
 sys.path.insert(
     0,
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "..")),
+    os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "ws",
+            "src",
+            "lerobot_vision",
+        )
+    ),
 )
 
 # rclpy stub
