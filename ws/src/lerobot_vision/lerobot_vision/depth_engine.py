@@ -1,3 +1,4 @@
+# ws/src/lerobot_vision/lerobot_vision/depth_engine.py
 """Depth engine wrapper around Stereo Anywhere."""
 
 from __future__ import annotations

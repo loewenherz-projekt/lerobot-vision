@@ -1,3 +1,4 @@
+# ws/src/lerobot_vision/lerobot_vision/control_node.py
 """Robot control node."""
 
 from __future__ import annotations

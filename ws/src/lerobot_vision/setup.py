@@ -1,3 +1,4 @@
+# ws/src/lerobot_vision/setup.py
 from setuptools import setup
 
 package_name = "lerobot_vision"

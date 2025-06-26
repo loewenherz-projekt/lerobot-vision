@@ -1,3 +1,4 @@
+# ws/src/lerobot_vision/lerobot_vision/visualization_node.py
 """Visualization node creating overlays."""
 
 from __future__ import annotations
