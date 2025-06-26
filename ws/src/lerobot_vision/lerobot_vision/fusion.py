@@ -40,9 +40,29 @@ class FusionModule:
         self.det_pub.publish(detections)
 
     def _masks_to_pointcloud2(self, masks: Any) -> PointCloud2:
+        """Convert segmentation masks into a ``PointCloud2`` message.
+
+        Args:
+            masks: A list of binary segmentation masks, typically as
+                ``numpy.ndarray`` objects, describing the objects in a scene.
+
+        Returns:
+            A ROS2 ``PointCloud2`` message representing the fused point cloud
+            extracted from ``masks``.
+        """
         raise NotImplementedError
 
     def _make_detections(
         self, masks: Any, labels: List[str], poses: Any
     ) -> Detection3DArray:
+        """Create a ``Detection3DArray`` message from masks, labels and poses.
+
+        Args:
+            masks: List of segmentation masks corresponding to detected objects.
+            labels: Semantic labels describing each detected object.
+            poses: Object poses associated with ``masks`` and ``labels``.
+
+        Returns:
+            A ROS2 ``Detection3DArray`` message encoding the detections.
+        """
         raise NotImplementedError
