@@ -35,6 +35,14 @@ rosdep update
 # Install Python requirements
 pip install -r requirements.txt
 
+# Verify Python packages are available
+if ! python3 - <<'EOF'
+import numpy, cv2, pytest
+EOF
+then
+  echo "Some Python packages are missing. Run 'pip install -r requirements.txt' or create the Conda environment from environment.yml." >&2
+fi
+
 # Build the workspace
 source /opt/ros/humble/setup.bash
 colcon build --symlink-install --workspace ws
