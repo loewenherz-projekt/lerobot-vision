@@ -1,0 +1,25 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/PointCloud2
+      Name: Points
+      Enabled: true
+      Topic: /robot/vision/points
+    - Class: rviz_default_plugins/MarkerArray
+      Name: Detections
+      Enabled: true
+      Marker Topic: /robot/vision/detections
+  Global Options:
+    Fixed Frame: map
+  Tools:
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Interact
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 5.0
+      Name: Orbit (rviz)
+      Target Frame: map

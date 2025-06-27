@@ -123,6 +123,12 @@ ros2 run rqt_image_view rqt_image_view /stereo/left_rectified
 ros2 run rqt_image_view rqt_image_view /stereo/right_rectified
 ```
 
+To visualize the 3D output in RViz2, launch the provided configuration:
+
+```bash
+ros2 launch lerobot_vision view_detections.launch.py
+```
+
 The visualization node publishes the raw and rectified camera frames as well as
 the computed depth map. These outputs can be enabled individually via the
 `publish_left_raw`, `publish_right_raw`, `publish_left_rectified`,
