@@ -49,7 +49,7 @@ Use `./run.sh` to activate the Conda environment (if present), source ROS 2 and 
 For a quick preview of the camera feed and a simple calibration helper you can run:
 
 ```bash
-python -m lerobot_vision.gui
+vision_gui
 ```
 
 The GUI contains checkboxes to enable rectified, depth and overlay views.
