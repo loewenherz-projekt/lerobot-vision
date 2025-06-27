@@ -39,7 +39,7 @@ Key modules include:
 
 - ``StereoCalibrator`` – assists with intrinsic and extrinsic calibration
 - ``ImageRectifier`` – rectifies image pairs using calibration results
-- ``DepthEngine`` – wraps StereoAnywhere for disparity estimation
+- ``DepthEngine`` – uses CUDA SGBM by default with optional StereoAnywhere fallback
 - ``Yolo3DEngine`` – object detection via OpenYOLO3D
 - ``PoseEstimator`` – thin wrapper around NVIDIA DOPE
 - ``ObjectLocalizer`` – fuses masks, depth and poses into 3D coordinates
