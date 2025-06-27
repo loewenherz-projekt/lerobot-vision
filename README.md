@@ -7,8 +7,10 @@ lightweight wrapper around NVIDIA DOPE for pose estimation. Heavy weight
 dependencies (YOLO3D, StereoAnywhere, MoveIt etc.) are provided as Git
 submodules under `external/`.
 
-An optional Tkinter GUI (`VisionGUI`) can be used to preview images and run a
-simple calibration wizard.
+An optional Tkinter GUI (`VisionGUI`) can be used to preview images, run a
+simple calibration wizard and display additional views. Rectified frames,
+depth maps and segmentation overlays can be toggled on or off using the
+provided checkboxes.
 
 ## Getting started
 
@@ -44,6 +46,8 @@ For a quick preview of the camera feed and a simple calibration helper you can r
 python -m lerobot_vision.gui
 ```
 
+The GUI contains checkboxes to enable rectified, depth and overlay views.
+
 ### 4. Project structure
 
 ```
@@ -66,12 +70,12 @@ The `create_structure.sh` helper can recreate the basic directory tree and some 
 
 ### 5. Tests
 
-Unit tests live in `ws/src/lerobot_vision/tests`. Run them using:
+Unit tests live in the `tests/` directory. Run them using:
 
 Make sure the `lerobot-vision` Conda environment is activated before running the tests.
 
 ```bash
-pytest
+pytest tests
 ```
 
 The tests rely on lightweight stubs for ROS messages so they do not require a full ROS installation during development.
@@ -102,6 +106,15 @@ In addition, 3D detections are published on:
 
 * ``/robot/vision/points`` (`sensor_msgs/PointCloud2`)
 * ``/robot/vision/detections`` (`vision_msgs/Detection3DArray`)
+
+You can toggle these publishers at runtime using the `toggle_publisher` service:
+
+```bash
+ros2 service call /visualization_node/toggle_publisher \
+  lerobot_vision/srv/TogglePublisher "{publisher: 'left_raw', enable: true}"
+ros2 service call /visualization_node/toggle_publisher \
+  lerobot_vision/srv/TogglePublisher "{publisher: 'left_raw', enable: false}"
+```
 
 Start `web_video_server` to stream a topic in the browser:
 

@@ -28,9 +28,15 @@ def setup_gui(monkeypatch):
         def configure(self, *a, **k):
             pass
 
+        def destroy(self):
+            pass
+
     class DummyVar:
         def set(self, _):
             pass
+
+        def get(self):
+            return False
 
     class DummyThread:
         def __init__(self, *a, **k):
@@ -42,8 +48,44 @@ def setup_gui(monkeypatch):
     monkeypatch.setattr(gui_mod.tk, "Tk", DummyTk)
     monkeypatch.setattr(gui_mod.tk, "Label", lambda *a, **k: DummyWidget())
     monkeypatch.setattr(gui_mod.tk, "Button", lambda *a, **k: DummyWidget())
+    monkeypatch.setattr(
+        gui_mod.tk, "Checkbutton", lambda *a, **k: DummyWidget()
+    )
+    monkeypatch.setattr(gui_mod.tk, "Toplevel", lambda *a, **k: DummyWidget())
     monkeypatch.setattr(gui_mod.tk, "StringVar", DummyVar)
+    monkeypatch.setattr(gui_mod.tk, "BooleanVar", lambda *a, **k: DummyVar())
     monkeypatch.setattr(gui_mod.threading, "Thread", DummyThread)
+    monkeypatch.setattr(
+        gui_mod,
+        "DepthEngine",
+        lambda *a, **k: mock.Mock(
+            compute_depth=mock.Mock(return_value=np.zeros((1, 1), dtype=float))
+        ),
+    )
+    monkeypatch.setattr(
+        gui_mod,
+        "ImageRectifier",
+        mock.Mock(return_value=mock.Mock(rectify=lambda l, r: (l, r))),
+    )
+    monkeypatch.setattr(
+        gui_mod,
+        "PoseEstimator",
+        mock.Mock(return_value=mock.Mock(estimate=mock.Mock(return_value=[]))),
+    )
+    monkeypatch.setattr(
+        gui_mod,
+        "Yolo3DEngine",
+        mock.Mock(
+            return_value=mock.Mock(
+                segment=mock.Mock(
+                    return_value=([np.zeros((1, 1), dtype=np.uint8)], ["obj"])
+                )
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        gui_mod, "localize_objects", mock.Mock(return_value=[])
+    )
 
     cam = mock.Mock()
     cam.get_frames.return_value = (
@@ -82,3 +124,16 @@ def test_wizard_bounds(monkeypatch):
     gui.step_idx = 0
     gui.prev_step()
     assert gui.step_idx == 0
+
+
+def test_toggle_views(monkeypatch):
+    cam = setup_gui(monkeypatch)
+    gui = gui_mod.VisionGUI(cam)
+
+    gui.show_rect_var.get = lambda: True
+    gui._toggle_rect()
+    assert gui.rect_window is not None
+
+    gui.show_rect_var.get = lambda: False
+    gui._toggle_rect()
+    assert gui.rect_window is None
