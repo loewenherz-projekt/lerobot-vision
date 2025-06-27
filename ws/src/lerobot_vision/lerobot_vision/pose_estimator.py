@@ -9,7 +9,9 @@ from typing import List, Tuple
 import numpy as np
 
 try:
-    from isaac_ros_pose_estimation.dope import DOPEEstimator  # pragma: no cover
+    from isaac_ros_pose_estimation.dope import (  # pragma: no cover
+        DOPEEstimator,
+    )
 except Exception as exc:  # pragma: no cover - optional dependency
     DOPEEstimator = None  # type: ignore
     logging.error("DOPE import failed: %s", exc)
@@ -28,7 +30,9 @@ class PoseEstimator:
         else:
             self.estimator = None
 
-    def estimate(self, image: np.ndarray) -> List[Tuple[np.ndarray, np.ndarray]]:
+    def estimate(
+        self, image: np.ndarray
+    ) -> List[Tuple[np.ndarray, np.ndarray]]:
         """Estimate object poses from an RGB image.
 
         Args:

@@ -44,8 +44,9 @@ class ImageRectifier:
             self.M2, self.D2, R2, P2, image_size, cv2.CV_32FC1
         )
 
-    def rectify(self, left: np.ndarray, right: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def rectify(
+        self, left: np.ndarray, right: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
         left_r = cv2.remap(left, self.map1x, self.map1y, cv2.INTER_LINEAR)
         right_r = cv2.remap(right, self.map2x, self.map2y, cv2.INTER_LINEAR)
         return left_r, right_r
-

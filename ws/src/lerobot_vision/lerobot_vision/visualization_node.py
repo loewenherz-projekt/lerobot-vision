@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import logging
-from typing import List
+from typing import List, Tuple
 
 import cv2
 import numpy as np
@@ -59,15 +59,22 @@ class VisualizationNode(Node):
             depth = self.depth_engine.compute_depth(left, right)
             masks, labels = self.yolo_engine.segment([left], depth)
             poses = self.pose_estimator.estimate(left)
-            _ = localize_objects(masks, depth, StereoCamera.camera_matrix)
-            overlay = self._draw_overlay(left, masks, labels)
+            _ = localize_objects(
+                masks, depth, StereoCamera.camera_matrix, labels, poses
+            )
+            overlay = self._draw_overlay(left, masks, labels, depth, poses)
             msg = self.bridge.cv2_to_imgmsg(overlay, encoding="bgr8")
             self.pub.publish(msg)
         except Exception as exc:  # pragma: no cover
             logging.error("Overlay generation failed: %s", exc)
 
     def _draw_overlay(
-        self, image: np.ndarray, masks: List[np.ndarray], labels: List[str]
+        self,
+        image: np.ndarray,
+        masks: List[np.ndarray],
+        labels: List[str],
+        depth: np.ndarray,
+        poses: List[Tuple[np.ndarray, np.ndarray]] | None = None,
     ) -> np.ndarray:
         """Draw segmentation overlays on an image.
 
@@ -79,12 +86,27 @@ class VisualizationNode(Node):
         Returns:
             The image with overlays applied.
         """
-        for mask, label in zip(masks, labels):
+        fx = StereoCamera.camera_matrix[0, 0]
+        fy = StereoCamera.camera_matrix[1, 1]
+        cx = StereoCamera.camera_matrix[0, 2]
+        cy = StereoCamera.camera_matrix[1, 2]
+
+        def _project(pt: np.ndarray) -> tuple[int, int]:
+            u = int(pt[0] * fx / pt[2] + cx)
+            v = int(pt[1] * fy / pt[2] + cy)
+            return u, v
+
+        for idx, (mask, label) in enumerate(zip(masks, labels)):
             ys, xs = np.nonzero(mask > 0)
             if len(xs) == 0:
                 continue
             x0, x1 = xs.min(), xs.max()
             y0, y1 = ys.min(), ys.max()
+            u = float(np.median(xs))
+            v = float(np.median(ys))
+            z = float(np.median(depth[ys, xs]))
+            x = (u - cx) * z / fx
+            y = (v - cy) * z / fy
             cv2.rectangle(image, (x0, y0), (x1, y1), (0, 255, 0), 2)
             cv2.putText(
                 image,
@@ -95,4 +117,44 @@ class VisualizationNode(Node):
                 (0, 255, 0),
                 1,
             )
+            info = f"{z:.2f}m {x:+.2f},{y:+.2f}"
+            cv2.putText(
+                image,
+                info,
+                (int(x0), int(y1) + 15),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 255, 0),
+                1,
+            )
+            if poses and idx < len(poses) and poses[idx] is not None:
+                _, quat = poses[idx]
+                xq, yq, zq, wq = quat
+                rot = np.array(
+                    [
+                        [
+                            1 - 2 * (yq**2 + zq**2),
+                            2 * (xq * yq - zq * wq),
+                            2 * (xq * zq + yq * wq),
+                        ],
+                        [
+                            2 * (xq * yq + zq * wq),
+                            1 - 2 * (xq**2 + zq**2),
+                            2 * (yq * zq - xq * wq),
+                        ],
+                        [
+                            2 * (xq * zq - yq * wq),
+                            2 * (yq * zq + xq * wq),
+                            1 - 2 * (xq**2 + yq**2),
+                        ],
+                    ]
+                )
+                center = np.array([x, y, z], dtype=float)
+                axes = rot @ (0.05 * np.eye(3))
+                for axis, color in zip(
+                    axes.T,
+                    [(0, 0, 255), (0, 255, 0), (255, 0, 0)],
+                ):
+                    pt2 = _project(center + axis)
+                    cv2.line(image, (int(u), int(v)), pt2, color, 2)
         return image

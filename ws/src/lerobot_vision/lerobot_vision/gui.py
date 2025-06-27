@@ -27,7 +27,11 @@ class VisionGUI:  # pragma: no cover - GUI helper
         self.left_label.pack(side=tk.LEFT)
         self.right_label = tk.Label(self.root)
         self.right_label.pack(side=tk.LEFT)
-        btn = tk.Button(self.root, text="Capture Corners", command=self._capture)
+        btn = tk.Button(
+            self.root,
+            text="Capture Corners",
+            command=self._capture,
+        )
         btn.pack(fill=tk.X)
         btn2 = tk.Button(self.root, text="Calibrate", command=self._calibrate)
         btn2.pack(fill=tk.X)
@@ -45,7 +49,9 @@ class VisionGUI:  # pragma: no cover - GUI helper
             self.root.update_idletasks()
             self.root.update()
 
-    def _show_image(self, img: np.ndarray, widget: tk.Label) -> None:  # pragma: no cover
+    def _show_image(
+        self, img: np.ndarray, widget: tk.Label
+    ) -> None:  # pragma: no cover
         rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         im = ImageTk.PhotoImage(Image.fromarray(rgb))
         widget.configure(image=im)

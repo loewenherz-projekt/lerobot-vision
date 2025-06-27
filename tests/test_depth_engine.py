@@ -21,3 +21,15 @@ def test_compute_depth_success():
     result = engine.compute_depth(dummy, dummy)
     assert result is depth
     engine.engine.infer.assert_called_once()
+
+
+def test_init_custom_model():
+    class Dummy:
+        def __init__(self, *args, **kwargs):
+            Dummy.args = args
+            Dummy.kwargs = kwargs
+
+    with mock.patch("lerobot_vision.depth_engine.StereoAnywhere", Dummy):
+        engine = DepthEngine(model_path="model.pth")
+        assert isinstance(engine.engine, Dummy)
+        assert Dummy.kwargs == {"model_path": "model.pth"}

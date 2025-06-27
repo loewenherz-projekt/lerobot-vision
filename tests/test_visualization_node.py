@@ -1,6 +1,8 @@
 # tests/test_visualization_node.py
 from unittest import mock
 
+import cv2
+
 import numpy as np
 import rclpy
 from sensor_msgs.msg import Image
@@ -9,18 +11,26 @@ from lerobot_vision.visualization_node import VisualizationNode
 
 
 def test_on_timer(monkeypatch):
+    class DummyCam:
+        camera_matrix = np.eye(3)
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def get_frames(self):
+            return (
+                np.zeros((1, 1, 3), dtype=np.uint8),
+                np.zeros((1, 1, 3), dtype=np.uint8),
+            )
+
     monkeypatch.setattr(
         "lerobot_vision.visualization_node.StereoCamera",
-        mock.Mock(
-            return_value=mock.Mock(
-                get_frames=mock.Mock(
-                    return_value=(
-                        np.zeros((1, 1, 3), dtype=np.uint8),
-                        np.zeros((1, 1, 3), dtype=np.uint8),
-                    )
-                )
-            )
-        ),
+        DummyCam,
+    )
+    monkeypatch.setattr(
+        "lerobot_vision.visualization_node.StereoCamera.camera_matrix",
+        np.eye(3),
+        raising=False,
     )
     monkeypatch.setattr(
         "lerobot_vision.visualization_node.DepthEngine",
@@ -46,9 +56,10 @@ def test_on_timer(monkeypatch):
         "lerobot_vision.visualization_node.PoseEstimator",
         mock.Mock(return_value=mock.Mock(estimate=mock.Mock(return_value=[]))),
     )
+    loc_mock = mock.Mock(return_value=[])
     monkeypatch.setattr(
         "lerobot_vision.visualization_node.localize_objects",
-        mock.Mock(return_value=[]),
+        loc_mock,
     )
     monkeypatch.setattr(
         "lerobot_vision.visualization_node.CvBridge",
@@ -64,4 +75,64 @@ def test_on_timer(monkeypatch):
     node.pub.publish = mock.Mock()
     node._on_timer()
     node.pub.publish.assert_called_once()
+    loc_mock.assert_called_once()
+    args, _ = loc_mock.call_args
+    assert len(args) == 5
+    rclpy.shutdown()
+
+
+def test_draw_overlay(monkeypatch):
+    class DummyCam:
+        camera_matrix = np.eye(3)
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def get_frames(self):
+            return (
+                np.zeros((1, 1, 3), dtype=np.uint8),
+                np.zeros((1, 1, 3), dtype=np.uint8),
+            )
+
+    monkeypatch.setattr(
+        "lerobot_vision.visualization_node.StereoCamera",
+        DummyCam,
+    )
+    monkeypatch.setattr(
+        "lerobot_vision.visualization_node.DepthEngine",
+        mock.Mock(return_value=mock.Mock()),
+    )
+    monkeypatch.setattr(
+        "lerobot_vision.visualization_node.Yolo3DEngine",
+        mock.Mock(return_value=mock.Mock()),
+    )
+    monkeypatch.setattr(
+        "lerobot_vision.visualization_node.PoseEstimator",
+        mock.Mock(return_value=mock.Mock()),
+    )
+    monkeypatch.setattr(
+        "lerobot_vision.visualization_node.CvBridge",
+        mock.Mock(
+            return_value=mock.Mock(
+                cv2_to_imgmsg=mock.Mock(return_value=Image())
+            )
+        ),
+    )
+
+    monkeypatch.setattr("cv2.rectangle", mock.Mock())
+    monkeypatch.setattr("cv2.putText", mock.Mock())
+    monkeypatch.setattr("cv2.line", mock.Mock())
+
+    rclpy.init(args=None)
+    node = VisualizationNode("/tmp")
+    img = np.zeros((5, 5, 3), dtype=np.uint8)
+    mask = np.ones((5, 5), dtype=np.uint8)
+    depth = np.ones((5, 5), dtype=float)
+    node._draw_overlay(
+        img, [mask], ["obj"], depth, [(np.zeros(3), np.array([0, 0, 0, 1]))]
+    )
+
+    cv2.rectangle.assert_called_once()
+    assert cv2.putText.call_count >= 1
+    assert cv2.line.call_count == 3
     rclpy.shutdown()

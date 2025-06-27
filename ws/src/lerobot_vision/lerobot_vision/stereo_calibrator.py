@@ -15,7 +15,9 @@ import yaml
 class StereoCalibrator:
     """Perform stereo calibration from image pairs."""
 
-    def __init__(self, board_size: Tuple[int, int] = (7, 6), square_size: float = 1.0) -> None:
+    def __init__(
+        self, board_size: Tuple[int, int] = (7, 6), square_size: float = 1.0
+    ) -> None:
         self.board_size = board_size
         self.square_size = square_size
         self.objpoints: List[np.ndarray] = []
@@ -30,8 +32,20 @@ class StereoCalibrator:
         if not ret_l or not ret_r:
             return False
         term = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-        corners_l = cv2.cornerSubPix(cv2.cvtColor(left, cv2.COLOR_BGR2GRAY), corners_l, (11, 11), (-1, -1), term)
-        corners_r = cv2.cornerSubPix(cv2.cvtColor(right, cv2.COLOR_BGR2GRAY), corners_r, (11, 11), (-1, -1), term)
+        corners_l = cv2.cornerSubPix(
+            cv2.cvtColor(left, cv2.COLOR_BGR2GRAY),
+            corners_l,
+            (11, 11),
+            (-1, -1),
+            term,
+        )
+        corners_r = cv2.cornerSubPix(
+            cv2.cvtColor(right, cv2.COLOR_BGR2GRAY),
+            corners_r,
+            (11, 11),
+            (-1, -1),
+            term,
+        )
         objp = np.zeros((np.prod(pattern_size), 3), np.float32)
         objp[:, :2] = np.indices(pattern_size).T.reshape(-1, 2)
         objp *= self.square_size
@@ -40,9 +54,14 @@ class StereoCalibrator:
         self.right_points.append(corners_r)
         return True
 
-    def calibrate(
-        self, image_size: Tuple[int, int]
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    def calibrate(self, image_size: Tuple[int, int]) -> Tuple[
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+        np.ndarray,
+    ]:
         """Run stereo calibration and return intrinsics and extrinsics."""
         if not self.objpoints:
             raise RuntimeError("No corners accumulated")
@@ -56,8 +75,8 @@ class StereoCalibrator:
         if not ret_l or not ret_r:
             raise RuntimeError("Calibration failed")
 
-        ret, _, _, r, t, _, _ = cv2.stereoCalibrate(  # pragma: no cover - heavy
-            # calibration
+        ret, _, _, r, t, _, _ = cv2.stereoCalibrate(
+            # pragma: no cover - heavy calibration
             self.objpoints,
             self.left_points,
             self.right_points,
@@ -96,4 +115,3 @@ class StereoCalibrator:
             Path(path).write_text(yaml.safe_dump(data))
         except Exception as exc:  # pragma: no cover - file IO
             logging.error("Failed to save calibration: %s", exc)
-

@@ -27,7 +27,10 @@ class DepthEngine:
         self.model_path = model_path
         if isinstance(StereoAnywhere, type):
             try:
-                self.engine = StereoAnywhere(pretrained=True)
+                if model_path is not None:
+                    self.engine = StereoAnywhere(model_path=model_path)
+                else:
+                    self.engine = StereoAnywhere(pretrained=True)
             except Exception as exc:  # pragma: no cover - runtime path
                 self.engine = None
                 logging.error("StereoAnywhere init failed: %s", exc)

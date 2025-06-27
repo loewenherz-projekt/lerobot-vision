@@ -81,8 +81,10 @@ class FusionModule:
         """
         detections = []
         for mask, label, pose in zip(masks, labels, poses):
-            detections.append({
-                "label": label,
-                "pose": pose,
-            })
+            detections.append(
+                {
+                    "label": label,
+                    "pose": pose,
+                }
+            )
         return Detection3DArray(detections=detections)
