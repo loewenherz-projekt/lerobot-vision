@@ -54,7 +54,11 @@ Always activate the environment before running tests or `run.sh`.
 
 ### 3. Running the demo
 
-Use `./run.sh` to activate the Conda environment (if present), source ROS 2 and launch `system_launch.py` which starts the example nodes. Pass `--gui` to start the GUI alongside the pipeline.
+Use `./run.sh` to activate the Conda environment (if present), source ROS 2 and launch `system_launch.py` which starts the example nodes. Pass `--gui` to start the GUI alongside the pipeline. CUDA acceleration is enabled by default. Disable it with:
+
+```bash
+ros2 launch lerobot_vision system_launch.py use_cuda:=false
+```
 
 For a quick preview of the camera feed and a simple calibration helper you can run:
 
