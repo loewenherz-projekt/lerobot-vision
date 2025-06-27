@@ -15,3 +15,4 @@ dependencies:
       - pytest-cov
       - flake8
       - black
+      - matplotlib

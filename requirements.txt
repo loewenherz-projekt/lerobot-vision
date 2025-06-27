@@ -6,3 +6,4 @@ pytest-cov
 flake8
 black
 PyYAML
+matplotlib
