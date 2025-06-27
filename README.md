@@ -111,3 +111,7 @@ Then open `http://<robot_ip>:8080/stream?topic=/openyolo3d/overlay` in your brow
 * Ensure submodules are checked out (`git submodule update --init --recursive`).
 * When running on a fresh system, install ROS 2 Humble before executing the scripts.
 
+
+## License
+
+This project is licensed under the [Apache 2.0 License](LICENSE).
