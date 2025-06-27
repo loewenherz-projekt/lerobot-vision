@@ -7,6 +7,9 @@ lightweight wrapper around NVIDIA DOPE for pose estimation. Heavy weight
 dependencies (YOLO3D, StereoAnywhere, MoveIt etc.) are provided as Git
 submodules under `external/`.
 
+Before building the workspace you must fetch these submodules:
+`git submodule update --init --recursive`.
+
 An optional Tkinter GUI (`VisionGUI`) can be used to preview images and run a
 simple calibration wizard.
 
