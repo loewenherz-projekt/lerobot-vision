@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 
+import rclpy
 from rclpy.node import Node
 from trajectory_msgs.msg import JointTrajectory
 
@@ -48,3 +49,18 @@ class ControlNode(Node):
                 self.robot.move_to_joint_positions(point.positions)
             except Exception as exc:  # pragma: no cover
                 logging.error("Movement failed: %s", exc)
+
+
+def main(args: list[str] | None = None) -> None:
+    """Entry point for the ``control_node`` executable."""
+    rclpy.init(args=args)
+    node = ControlNode()
+    try:
+        rclpy.spin(node)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == "__main__":  # pragma: no cover - manual execution
+    main()

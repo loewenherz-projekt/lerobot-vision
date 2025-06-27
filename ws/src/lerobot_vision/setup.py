@@ -22,6 +22,11 @@ setup(
     license="Apache-2.0",
     tests_require=["pytest"],
     entry_points={
-        "console_scripts": [],
+        "console_scripts": [
+            "visualization_node=lerobot_vision.visualization_node:main",
+            "nlp_node=lerobot_vision.nlp_node:main",
+            "planner_node=lerobot_vision.planner_node:main",
+            "control_node=lerobot_vision.control_node:main",
+        ],
     },
 )

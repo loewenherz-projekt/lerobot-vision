@@ -9,6 +9,7 @@ from typing import List, Tuple
 import cv2
 import numpy as np
 from cv_bridge import CvBridge
+import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 
@@ -247,3 +248,18 @@ class VisualizationNode(Node):
                     pt2 = _project(center + axis)
                     cv2.line(image, (int(u), int(v)), pt2, color, 2)
         return image
+
+
+def main(args: list[str] | None = None) -> None:
+    """Entry point for the ``visualization_node`` executable."""
+    rclpy.init(args=args)
+    node = VisualizationNode("/tmp")
+    try:
+        rclpy.spin(node)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == "__main__":  # pragma: no cover - manual execution
+    main()

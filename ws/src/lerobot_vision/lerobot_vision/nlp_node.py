@@ -8,6 +8,7 @@ import logging
 from typing import Dict, List
 
 import openai
+import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 
@@ -54,3 +55,18 @@ class NlpNode(Node):
         except Exception as exc:
             logging.error("OpenAI API error: %s", exc)
             return []
+
+
+def main(args: list[str] | None = None) -> None:
+    """Entry point for the ``nlp_node`` executable."""
+    rclpy.init(args=args)
+    node = NlpNode()
+    try:
+        rclpy.spin(node)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == "__main__":  # pragma: no cover - manual execution
+    main()
