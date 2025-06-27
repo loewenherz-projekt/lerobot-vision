@@ -19,6 +19,7 @@ from .depth_engine import DepthEngine
 from .yolo3d_engine import Yolo3DEngine
 from .pose_estimator import PoseEstimator
 from .object_localizer import localize_objects
+from .image_rectifier import ImageRectifier
 
 
 class VisualizationNode(Node):
@@ -35,6 +36,12 @@ class VisualizationNode(Node):
         default_cfg = base / "config" / "camera.yaml"
         self.declare_parameter("camera_config", str(default_cfg))
         self.declare_parameter("yolo_checkpoint", checkpoint_dir)
+        self.declare_parameter("publish_left_raw", False)
+        self.declare_parameter("publish_right_raw", False)
+        self.declare_parameter("publish_left_rectified", False)
+        self.declare_parameter("publish_right_rectified", False)
+        self.declare_parameter("publish_depth", False)
+        self.declare_parameter("publish_overlay", True)
         config_path = (
             self.get_parameter("camera_config")
             .get_parameter_value()
@@ -45,26 +52,108 @@ class VisualizationNode(Node):
             .get_parameter_value()
             .string_value
         )
+        p_left_raw = (
+            self.get_parameter("publish_left_raw").get_parameter_value().integer_value
+            == 1
+        )
+        p_right_raw = (
+            self.get_parameter("publish_right_raw").get_parameter_value().integer_value
+            == 1
+        )
+        p_left_rect = (
+            self.get_parameter("publish_left_rectified")
+            .get_parameter_value()
+            .integer_value
+            == 1
+        )
+        p_right_rect = (
+            self.get_parameter("publish_right_rectified")
+            .get_parameter_value()
+            .integer_value
+            == 1
+        )
+        p_depth = (
+            self.get_parameter("publish_depth").get_parameter_value().integer_value
+            == 1
+        )
+        p_overlay = (
+            self.get_parameter("publish_overlay").get_parameter_value().integer_value
+            == 1
+        )
         self.bridge = CvBridge()
         self.camera = StereoCamera(config_path=config_path)
         self.depth_engine = DepthEngine()
         self.yolo_engine = Yolo3DEngine(ckpt_path)
         self.pose_estimator = PoseEstimator()
-        self.pub = self.create_publisher(Image, "/openyolo3d/overlay", 10)
+        self.pub = (
+            self.create_publisher(Image, "/openyolo3d/overlay", 10)
+            if p_overlay
+            else None
+        )
+        self.pub_left_raw = (
+            self.create_publisher(Image, "/stereo/left_raw", 10)
+            if p_left_raw
+            else None
+        )
+        self.pub_right_raw = (
+            self.create_publisher(Image, "/stereo/right_raw", 10)
+            if p_right_raw
+            else None
+        )
+        self.pub_left_rect = (
+            self.create_publisher(Image, "/stereo/left_rectified", 10)
+            if p_left_rect
+            else None
+        )
+        self.pub_right_rect = (
+            self.create_publisher(Image, "/stereo/right_rectified", 10)
+            if p_right_rect
+            else None
+        )
+        self.pub_depth = (
+            self.create_publisher(Image, "/stereo/depth", 10) if p_depth else None
+        )
+        self.rectifier: ImageRectifier | None = None
         self.create_timer(0.2, self._on_timer)
 
     def _on_timer(self) -> None:
         try:
             left, right = self.camera.get_frames()
-            depth = self.depth_engine.compute_depth(left, right)
-            masks, labels = self.yolo_engine.segment([left], depth)
-            poses = self.pose_estimator.estimate(left)
+            if self.pub_left_raw:
+                msg = self.bridge.cv2_to_imgmsg(left, encoding="bgr8")
+                self.pub_left_raw.publish(msg)
+            if self.pub_right_raw:
+                msg = self.bridge.cv2_to_imgmsg(right, encoding="bgr8")
+                self.pub_right_raw.publish(msg)
+            if self.rectifier is None:
+                h, w = left.shape[:2]
+                self.rectifier = ImageRectifier(
+                    StereoCamera.camera_matrix,
+                    StereoCamera.dist_coeffs,
+                    StereoCamera.camera_matrix,
+                    StereoCamera.dist_coeffs,
+                    (w, h),
+                )
+            left_r, right_r = self.rectifier.rectify(left, right)
+            if self.pub_left_rect:
+                msg = self.bridge.cv2_to_imgmsg(left_r, encoding="bgr8")
+                self.pub_left_rect.publish(msg)
+            if self.pub_right_rect:
+                msg = self.bridge.cv2_to_imgmsg(right_r, encoding="bgr8")
+                self.pub_right_rect.publish(msg)
+            depth = self.depth_engine.compute_depth(left_r, right_r)
+            if self.pub_depth:
+                msg = self.bridge.cv2_to_imgmsg(depth, encoding="32FC1")
+                self.pub_depth.publish(msg)
+            masks, labels = self.yolo_engine.segment([left_r], depth)
+            poses = self.pose_estimator.estimate(left_r)
             _ = localize_objects(
                 masks, depth, StereoCamera.camera_matrix, labels, poses
             )
-            overlay = self._draw_overlay(left, masks, labels, depth, poses)
-            msg = self.bridge.cv2_to_imgmsg(overlay, encoding="bgr8")
-            self.pub.publish(msg)
+            overlay = self._draw_overlay(left_r, masks, labels, depth, poses)
+            if self.pub:
+                msg = self.bridge.cv2_to_imgmsg(overlay, encoding="bgr8")
+                self.pub.publish(msg)
         except Exception as exc:  # pragma: no cover
             logging.error("Overlay generation failed: %s", exc)
 

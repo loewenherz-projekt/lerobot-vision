@@ -33,6 +33,11 @@ def test_on_timer(monkeypatch):
         raising=False,
     )
     monkeypatch.setattr(
+        "lerobot_vision.visualization_node.StereoCamera.dist_coeffs",
+        np.zeros(5),
+        raising=False,
+    )
+    monkeypatch.setattr(
         "lerobot_vision.visualization_node.DepthEngine",
         mock.Mock(
             return_value=mock.Mock(
@@ -68,6 +73,17 @@ def test_on_timer(monkeypatch):
                 cv2_to_imgmsg=mock.Mock(return_value=Image())
             )  # noqa: E501
         ),
+    )
+    class DummyRect:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def rectify(self, left, right):
+            return left, right
+
+    monkeypatch.setattr(
+        "lerobot_vision.visualization_node.ImageRectifier",
+        DummyRect,
     )
 
     rclpy.init(args=None)

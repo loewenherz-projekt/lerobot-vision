@@ -67,7 +67,16 @@ Image topics can be previewed with `rqt_image_view`:
 ```bash
 ros2 run rqt_image_view rqt_image_view /openyolo3d/overlay
 ros2 run rqt_image_view rqt_image_view /stereo/depth
+ros2 run rqt_image_view rqt_image_view /stereo/left_raw
+ros2 run rqt_image_view rqt_image_view /stereo/right_raw
+ros2 run rqt_image_view rqt_image_view /stereo/left_rectified
+ros2 run rqt_image_view rqt_image_view /stereo/right_rectified
 ```
+
+The visualization node publishes the raw and rectified camera frames as well as
+the computed depth map. These outputs can be enabled individually via the
+`publish_left_raw`, `publish_right_raw`, `publish_left_rectified`,
+`publish_right_rectified` and `publish_depth` ROS parameters.
 
 Start `web_video_server` to stream a topic in the browser:
 
