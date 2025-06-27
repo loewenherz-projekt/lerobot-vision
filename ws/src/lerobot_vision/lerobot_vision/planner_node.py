@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import logging
 
+import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 from trajectory_msgs.msg import JointTrajectory
@@ -70,3 +71,18 @@ class PlannerNode(Node):
         except Exception as exc:
             logging.error("Planning error: %s", exc)
             return JointTrajectory()
+
+
+def main(args: list[str] | None = None) -> None:
+    """Entry point for the ``planner_node`` executable."""
+    rclpy.init(args=args)
+    node = PlannerNode()
+    try:
+        rclpy.spin(node)
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == "__main__":  # pragma: no cover - manual execution
+    main()
