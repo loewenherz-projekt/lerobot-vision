@@ -1,11 +1,14 @@
 # lerobot-vision
 
 This repository contains a small ROS 2 workspace for the `lerobot_vision` package.  
-The package demonstrates camera capture, depth computation and 3D object localisation.  
+The package demonstrates camera capture, depth computation and 3D object localisation.
 Additional utilities implement stereo calibration, image rectification and a
 lightweight wrapper around NVIDIA DOPE for pose estimation. Heavy weight
 dependencies (YOLO3D, StereoAnywhere, MoveIt etc.) are provided as Git
 submodules under `external/`.
+
+An optional Tkinter GUI (`VisionGUI`) can be used to preview images and run a
+simple calibration wizard.
 
 ## Getting started
 
@@ -15,7 +18,13 @@ Run `./setup.sh` once to install system requirements, initialise submodules and 
 
 ### 2. Running the demo
 
-Use `./run.sh` to activate the Conda environment (if present), source ROS 2 and launch `system_launch.py` which starts the example nodes.
+Use `./run.sh` to activate the Conda environment (if present), source ROS 2 and launch `system_launch.py` which starts the example nodes.
+
+For a quick preview of the camera feed and a simple calibration helper you can run:
+
+```bash
+python -m lerobot_vision.gui
+```
 
 ### 3. Project structure
 

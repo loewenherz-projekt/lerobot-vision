@@ -71,3 +71,35 @@ class StereoCamera:
         except Exception as exc:  # pragma: no cover - config optional
             logging.error("Failed to load camera parameters: %s", exc)
         return None
+
+
+class AsyncStereoCamera(StereoCamera):  # pragma: no cover - optional helper
+    """Stereo camera that captures frames on a background thread."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._frame_left: np.ndarray | None = None
+        self._frame_right: np.ndarray | None = None
+        self._running = True
+        import threading
+
+        self._thread = threading.Thread(target=self._loop, daemon=True)
+        self._thread.start()
+
+    def _loop(self) -> None:  # pragma: no cover - runtime loop
+        while self._running:
+            try:
+                self._frame_left, self._frame_right = super().get_frames()
+            except Exception:
+                continue
+
+    def get_frames(self) -> Tuple[np.ndarray, np.ndarray]:  # pragma: no cover
+        if self._frame_left is None or self._frame_right is None:
+            return super().get_frames()
+        return self._frame_left.copy(), self._frame_right.copy()
+
+    def release(self) -> None:  # pragma: no cover
+        self._running = False
+        if hasattr(self, "_thread"):
+            self._thread.join(timeout=1.0)
+        super().release()
