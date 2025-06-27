@@ -33,3 +33,31 @@ def test_init_custom_model():
         engine = DepthEngine(model_path="model.pth")
         assert isinstance(engine.engine, Dummy)
         assert Dummy.kwargs == {"model_path": "model.pth"}
+
+
+def test_cuda_fallback(monkeypatch):
+    dummy = np.zeros((1, 1, 3), dtype=np.uint8)
+    disp = np.zeros((1, 1), dtype=np.float32)
+    matcher = mock.Mock(compute=mock.Mock(return_value=disp))
+    wls = mock.Mock(filter=mock.Mock(return_value=disp))
+    import types
+    import lerobot_vision.depth_engine as de
+    dummy_cv2 = types.SimpleNamespace(cuda=types.SimpleNamespace())
+    monkeypatch.setattr(de, "cv2", dummy_cv2)
+    monkeypatch.setattr(
+        de.cv2.cuda,
+        "StereoSGBM_create",
+        mock.Mock(return_value=matcher),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        de,
+        "ximgproc",
+        mock.Mock(createDisparityWLSFilterGeneric=mock.Mock(return_value=wls)),
+        raising=False,
+    )
+    engine = DepthEngine(use_cuda=True)
+    result = engine.compute_depth(dummy, dummy)
+    assert np.array_equal(result, disp)
+    matcher.compute.assert_called_once()
+    wls.filter.assert_called_once()
