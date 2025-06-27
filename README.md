@@ -92,9 +92,11 @@ The `create_structure.sh` helper can recreate the basic directory tree and some 
 
 ### 5. Tests
 
-Unit tests live in the `tests/` directory. Run them using:
-
-Make sure the `lerobot-vision` Conda environment is activated before running the tests.
+Unit tests live in the `tests/` directory. Before running them you must install
+the Python requirements – either create the Conda environment from
+`environment.yml` or run `pip install -r requirements.txt`.
+Make sure the `lerobot-vision` Conda environment is activated before running
+the tests. Run them using:
 
 ```bash
 pytest tests
