@@ -70,7 +70,7 @@ vision_gui
 
 #### Using the GUI
 
-The interface offers checkboxes to toggle rectified, depth, disparity, mask and overlay windows. Screenshots and overlay recordings can be captured via the corresponding buttons. Publishers for individual image topics can be toggled at runtime through the `toggle_publisher` service.
+The interface offers checkboxes to toggle rectified, depth, disparity, mask and overlay windows. Screenshots and overlay recordings can be captured via the corresponding buttons. Publishers for individual image topics can be toggled at runtime through the `toggle_publisher` service. The disparity and mask views are also published via ROS on `/stereo/disparity` and `/stereo/masks`.
 
 ### 4. Project structure
 
@@ -121,6 +121,8 @@ ros2 run rqt_image_view rqt_image_view /stereo/left_raw
 ros2 run rqt_image_view rqt_image_view /stereo/right_raw
 ros2 run rqt_image_view rqt_image_view /stereo/left_rectified
 ros2 run rqt_image_view rqt_image_view /stereo/right_rectified
+ros2 run rqt_image_view rqt_image_view /stereo/disparity
+ros2 run rqt_image_view rqt_image_view /stereo/masks
 ```
 
 To visualize the 3D output in RViz2, launch the provided configuration:
@@ -132,11 +134,14 @@ ros2 launch lerobot_vision view_detections.launch.py
 The visualization node publishes the raw and rectified camera frames as well as
 the computed depth map. These outputs can be enabled individually via the
 `publish_left_raw`, `publish_right_raw`, `publish_left_rectified`,
-`publish_right_rectified` and `publish_depth` ROS parameters.
+`publish_right_rectified`, `publish_depth`, `publish_disparity` and
+`publish_masks` ROS parameters.
 The overlay view combines these results into an image showing bounding boxes,
 labels, distances, relative positions and pose axes for each detected object.
 
 In addition, 3D detections are published on:
+* `/stereo/disparity` (`sensor_msgs/Image`)
+* `/stereo/masks` (`sensor_msgs/Image`)
 
 * ``/robot/vision/points`` (`sensor_msgs/PointCloud2`)
 * ``/robot/vision/detections`` (`vision_msgs/Detection3DArray`)
@@ -150,6 +155,10 @@ ros2 service call /visualization_node/toggle_publisher \
   lerobot_vision/srv/TogglePublisher "{publisher: 'left_raw', enable: false}"
 ros2 service call /visualization_node/toggle_publisher \
   lerobot_vision/srv/TogglePublisher "{publisher: 'overlay', enable: false}"
+ros2 service call /visualization_node/toggle_publisher \
+  lerobot_vision/srv/TogglePublisher "{publisher: 'disparity', enable: true}"
+ros2 service call /visualization_node/toggle_publisher \
+  lerobot_vision/srv/TogglePublisher "{publisher: 'masks', enable: false}"
 ```
 
 Start `web_video_server` to stream a topic in the browser:
