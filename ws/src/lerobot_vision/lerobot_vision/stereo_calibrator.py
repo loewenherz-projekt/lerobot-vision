@@ -40,23 +40,58 @@ class StereoCalibrator:
         self.right_points.append(corners_r)
         return True
 
-    def calibrate(self, image_size: Tuple[int, int]) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-        """Run stereo calibration."""
+    def calibrate(
+        self, image_size: Tuple[int, int]
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Run stereo calibration and return intrinsics and extrinsics."""
         if not self.objpoints:
             raise RuntimeError("No corners accumulated")
-        ret_l, m1, d1, _, _ = cv2.calibrateCamera(self.objpoints, self.left_points, image_size, None, None)
-        ret_r, m2, d2, _, _ = cv2.calibrateCamera(self.objpoints, self.right_points, image_size, None, None)
+
+        ret_l, m1, d1, _, _ = cv2.calibrateCamera(
+            self.objpoints, self.left_points, image_size, None, None
+        )
+        ret_r, m2, d2, _, _ = cv2.calibrateCamera(
+            self.objpoints, self.right_points, image_size, None, None
+        )
         if not ret_l or not ret_r:
             raise RuntimeError("Calibration failed")
-        return m1, d1, m2, d2
 
-    def save(self, path: str, m1: np.ndarray, d1: np.ndarray, m2: np.ndarray, d2: np.ndarray) -> None:
+        ret, _, _, r, t, _, _ = cv2.stereoCalibrate(  # pragma: no cover - heavy
+            # calibration
+            self.objpoints,
+            self.left_points,
+            self.right_points,
+            m1,
+            d1,
+            m2,
+            d2,
+            image_size,
+            flags=cv2.CALIB_FIX_INTRINSIC,
+        )
+        if not ret:  # pragma: no cover - runtime
+            raise RuntimeError("Stereo calibration failed")
+
+        return m1, d1, m2, d2, r, t
+
+    def save(
+        self,
+        path: str,
+        m1: np.ndarray,
+        d1: np.ndarray,
+        m2: np.ndarray,
+        d2: np.ndarray,
+        r: np.ndarray | None = None,
+        t: np.ndarray | None = None,
+    ) -> None:
         data = {
             "left_camera_matrix": m1.tolist(),
             "left_dist_coeffs": d1.tolist(),
             "right_camera_matrix": m2.tolist(),
             "right_dist_coeffs": d2.tolist(),
         }
+        if r is not None and t is not None:  # pragma: no cover - optional
+            data["rotation"] = r.tolist()
+            data["translation"] = t.tolist()
         try:
             Path(path).write_text(yaml.safe_dump(data))
         except Exception as exc:  # pragma: no cover - file IO
