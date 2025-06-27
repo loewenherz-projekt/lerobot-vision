@@ -47,6 +47,9 @@ class VisualizationNode(Node):
 
         Args:
             checkpoint_dir: Directory containing the YOLOv3-3D checkpoints.
+
+        The ``use_cuda`` ROS parameter controls whether CUDA acceleration is
+        used for depth estimation.
         """
         super().__init__("visualization_node")
         base = Path(__file__).resolve().parent.parent
@@ -59,6 +62,7 @@ class VisualizationNode(Node):
         self.declare_parameter("publish_right_rectified", False)
         self.declare_parameter("publish_depth", False)
         self.declare_parameter("publish_overlay", True)
+        self.declare_parameter("use_cuda", True)
         config_path = (
             self.get_parameter("camera_config")
             .get_parameter_value()
@@ -105,9 +109,15 @@ class VisualizationNode(Node):
             .integer_value
             == 1
         )
+        p_use_cuda = (
+            self.get_parameter("use_cuda")
+            .get_parameter_value()
+            .integer_value
+            == 1
+        )
         self.bridge = CvBridge()
         self.camera = StereoCamera(config_path=config_path)
-        self.depth_engine = DepthEngine()
+        self.depth_engine = DepthEngine(use_cuda=p_use_cuda)
         self.yolo_engine = Yolo3DEngine(ckpt_path)
         self.pose_estimator = PoseEstimator()
         self.fusion = FusionModule(self)
