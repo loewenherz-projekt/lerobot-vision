@@ -60,6 +60,8 @@ class VisionGUI:  # pragma: no cover - GUI helper
         self.show_rect_var = tk.BooleanVar(value=False)
         self.show_depth_var = tk.BooleanVar(value=False)
         self.show_overlay_var = tk.BooleanVar(value=False)
+        self.show_mask_var = tk.BooleanVar(value=False)
+        self.show_disp_var = tk.BooleanVar(value=False)
 
         tk.Checkbutton(
             self.root,
@@ -75,6 +77,18 @@ class VisionGUI:  # pragma: no cover - GUI helper
         ).pack(side=tk.LEFT)
         tk.Checkbutton(
             self.root,
+            text="Disparity",
+            variable=self.show_disp_var,
+            command=self._toggle_disp,
+        ).pack(side=tk.LEFT)
+        tk.Checkbutton(
+            self.root,
+            text="Masks",
+            variable=self.show_mask_var,
+            command=self._toggle_masks,
+        ).pack(side=tk.LEFT)
+        tk.Checkbutton(
+            self.root,
             text="Overlay",
             variable=self.show_overlay_var,
             command=self._toggle_overlay,
@@ -83,11 +97,15 @@ class VisionGUI:  # pragma: no cover - GUI helper
         self.rect_window: tk.Toplevel | None = None
         self.depth_window: tk.Toplevel | None = None
         self.overlay_window: tk.Toplevel | None = None
+        self.mask_window: tk.Toplevel | None = None
+        self.disp_window: tk.Toplevel | None = None
 
         self.rect_left_label: tk.Label | None = None
         self.rect_right_label: tk.Label | None = None
         self.depth_label: tk.Label | None = None
         self.overlay_label: tk.Label | None = None
+        self.mask_label: tk.Label | None = None
+        self.disp_label: tk.Label | None = None
 
         self.rectifier: ImageRectifier | None = None
         self.depth_engine = DepthEngine(use_cuda=False)
@@ -127,6 +145,8 @@ class VisionGUI:  # pragma: no cover - GUI helper
                 self.show_rect_var.get()
                 or self.show_depth_var.get()
                 or self.show_overlay_var.get()
+                or self.show_mask_var.get()
+                or self.show_disp_var.get()
             )
             if compute_extra:
                 if self.rectifier is None:
@@ -147,14 +167,25 @@ class VisionGUI:  # pragma: no cover - GUI helper
                 self._show_image(right_r, self.rect_right_label)
 
             if (
-                self.show_depth_var.get() or self.show_overlay_var.get()
+                self.show_depth_var.get()
+                or self.show_overlay_var.get()
+                or self.show_mask_var.get()
+                or self.show_disp_var.get()
             ) and self.depth_engine:
                 try:
-                    depth = self.depth_engine.compute_depth(left_r, right_r)
+                    if self.show_disp_var.get():
+                        depth, disp = self.depth_engine.compute_depth(
+                            left_r, right_r, return_disparity=True
+                        )
+                    else:
+                        depth = self.depth_engine.compute_depth(left_r, right_r)
+                        disp = None
                 except Exception:
                     depth = np.zeros_like(left_r[:, :, 0], dtype=float)
+                    disp = np.zeros_like(depth)
             else:
                 depth = None
+                disp = None
 
             if (
                 self.show_depth_var.get()
@@ -167,15 +198,28 @@ class VisionGUI:  # pragma: no cover - GUI helper
                 )
                 self._show_image(dcol, self.depth_label)
 
+            masks = None
+            labels = None
+            if (
+                (self.show_overlay_var.get() or self.show_mask_var.get())
+                and depth is not None
+                and self.yolo_engine
+            ):
+                try:
+                    masks, labels = self.yolo_engine.segment([left_r], depth)
+                except Exception:
+                    masks = None
+                    labels = None
+
             if (
                 self.show_overlay_var.get()
                 and self.overlay_window
                 and depth is not None
-                and self.yolo_engine
+                and masks is not None
+                and labels is not None
                 and self.pose_estimator
             ):
                 try:
-                    masks, labels = self.yolo_engine.segment([left_r], depth)
                     poses = self.pose_estimator.estimate(left_r)
                     _ = localize_objects(
                         masks, depth, self.camera.camera_matrix, labels, poses
@@ -186,6 +230,36 @@ class VisionGUI:  # pragma: no cover - GUI helper
                     self._show_image(overlay, self.overlay_label)
                 except Exception:
                     pass
+
+            if (
+                self.show_mask_var.get()
+                and self.mask_window
+                and masks is not None
+            ):
+                mask_img = np.zeros_like(left_r)
+                palette = [
+                    (255, 0, 0),
+                    (0, 255, 0),
+                    (0, 0, 255),
+                    (255, 255, 0),
+                    (255, 0, 255),
+                    (0, 255, 255),
+                ]
+                for idx, mask in enumerate(masks):
+                    color = palette[idx % len(palette)]
+                    mask_img[mask > 0] = color
+                self._show_image(mask_img, self.mask_label)
+
+            if (
+                self.show_disp_var.get()
+                and self.disp_window
+                and disp is not None
+            ):
+                dnorm = cv2.normalize(disp, None, 0, 255, cv2.NORM_MINMAX)
+                dcol = cv2.applyColorMap(
+                    dnorm.astype(np.uint8), cv2.COLORMAP_INFERNO
+                )
+                self._show_image(dcol, self.disp_label)
             self.root.update_idletasks()
             self.root.update()
 
@@ -279,6 +353,24 @@ class VisionGUI:  # pragma: no cover - GUI helper
         elif self.overlay_window is not None:
             self.overlay_window.destroy()
             self.overlay_window = None
+
+    def _toggle_masks(self) -> None:  # pragma: no cover - runtime GUI
+        if self.show_mask_var.get():
+            self.mask_window = tk.Toplevel(self.root)
+            self.mask_label = tk.Label(self.mask_window)
+            self.mask_label.pack()
+        elif self.mask_window is not None:
+            self.mask_window.destroy()
+            self.mask_window = None
+
+    def _toggle_disp(self) -> None:  # pragma: no cover - runtime GUI
+        if self.show_disp_var.get():
+            self.disp_window = tk.Toplevel(self.root)
+            self.disp_label = tk.Label(self.disp_window)
+            self.disp_label.pack()
+        elif self.disp_window is not None:
+            self.disp_window.destroy()
+            self.disp_window = None
 
     def _draw_overlay(
         self,
