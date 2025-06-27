@@ -22,6 +22,7 @@ from .yolo3d_engine import Yolo3DEngine
 from .pose_estimator import PoseEstimator
 from .object_localizer import localize_objects
 from .image_rectifier import ImageRectifier
+from .fusion import FusionModule
 
 
 class TogglePublisher:
@@ -109,6 +110,7 @@ class VisualizationNode(Node):
         self.depth_engine = DepthEngine()
         self.yolo_engine = Yolo3DEngine(ckpt_path)
         self.pose_estimator = PoseEstimator()
+        self.fusion = FusionModule(self)
         self.pub = (
             self.create_publisher(Image, "/openyolo3d/overlay", 10)
             if p_overlay
@@ -179,6 +181,7 @@ class VisualizationNode(Node):
             _ = localize_objects(
                 masks, depth, StereoCamera.camera_matrix, labels, poses
             )
+            self.fusion.publish(masks, labels, poses)
             overlay = self._draw_overlay(left_r, masks, labels, depth, poses)
             if self.pub:
                 msg = self.bridge.cv2_to_imgmsg(overlay, encoding="bgr8")

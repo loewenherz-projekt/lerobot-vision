@@ -1,4 +1,11 @@
 # ws/src/lerobot_vision/launch/system_launch.py
+"""Launch demo nodes.
+
+The :class:`~lerobot_vision.visualization_node.VisualizationNode` publishes
+``/openyolo3d/overlay`` for image overlays as well as ``/robot/vision/points``
+and ``/robot/vision/detections`` for 3D data.
+"""
+
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
