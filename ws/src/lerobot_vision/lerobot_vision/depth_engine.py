@@ -1,5 +1,5 @@
 # ws/src/lerobot_vision/lerobot_vision/depth_engine.py
-"""Depth engine wrapper around Stereo Anywhere with CUDA fallback."""
+"""Depth engine using CUDA acceleration with optional CPU fallback."""
 
 from __future__ import annotations
 
@@ -27,13 +27,13 @@ class DepthEngine:
     """Compute depth from stereo images."""
 
     def __init__(
-        self, model_path: Optional[str] = None, *, use_cuda: bool = False
+        self, model_path: Optional[str] = None, *, use_cuda: bool = True
     ) -> None:
         """Create the depth engine.
 
         Args:
             model_path: Optional path to a trained ``StereoAnywhere`` model.
-            use_cuda: Force use of the CUDA/SGBM fallback implementation.
+            use_cuda: Use CUDA accelerated SGBM. Set ``False`` for CPU fallback.
         """
         self.model_path = model_path
         self.use_cuda = use_cuda
