@@ -66,12 +66,12 @@ The `create_structure.sh` helper can recreate the basic directory tree and some 
 
 ### 5. Tests
 
-Unit tests live in `ws/src/lerobot_vision/tests`. Run them using:
+Unit tests live in the `tests/` directory. Run them using:
 
 Make sure the `lerobot-vision` Conda environment is activated before running the tests.
 
 ```bash
-pytest
+pytest tests
 ```
 
 The tests rely on lightweight stubs for ROS messages so they do not require a full ROS installation during development.
