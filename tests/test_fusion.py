@@ -1,9 +1,11 @@
 # tests/test_fusion.py
 from unittest import mock
 
-import pytest
+import numpy as np
 import rclpy
 from rclpy.node import Node
+from sensor_msgs.msg import PointCloud2
+from vision_msgs.msg import Detection3DArray
 
 from lerobot_vision.fusion import FusionModule
 
@@ -31,9 +33,17 @@ def test_helper_methods():
     node = Node("test")
     fusion = FusionModule(node)
 
-    with pytest.raises(NotImplementedError):
-        fusion._masks_to_pointcloud2([1, 2])
+    masks = [np.array([[1, 0], [0, 1]], dtype=np.uint8)]
+    labels = ["obj"]
+    poses = [object()]
 
-    with pytest.raises(NotImplementedError):
-        fusion._make_detections([], ["a", "b"], [])
+    pc = fusion._masks_to_pointcloud2(masks)
+    assert isinstance(pc, PointCloud2)
+    assert hasattr(pc, "points")
+    assert len(pc.points) == 2
+
+    det = fusion._make_detections(masks, labels, poses)
+    assert isinstance(det, Detection3DArray)
+    assert len(det.detections) == 1
+    assert det.detections[0]["label"] == "obj"
     rclpy.shutdown()

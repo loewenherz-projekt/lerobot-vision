@@ -37,6 +37,23 @@ The tests rely on lightweight stubs for ROS messages so they do not require a fu
 
 The GitHub workflow at `.github/workflows/ci.yml` builds the workspace with `colcon`, runs the linters and executes the unit tests with coverage reporting via Codecov.
 
+### 6. Visualization
+
+Image topics can be previewed with `rqt_image_view`:
+
+```bash
+ros2 run rqt_image_view rqt_image_view /openyolo3d/overlay
+ros2 run rqt_image_view rqt_image_view /stereo/depth
+```
+
+Start `web_video_server` to stream a topic in the browser:
+
+```bash
+rosrun web_video_server web_video_server
+```
+
+Then open `http://<robot_ip>:8080/stream?topic=/openyolo3d/overlay` in your browser.
+
 ## Troubleshooting
 
 * Ensure submodules are checked out (`git submodule update --init --recursive`).
