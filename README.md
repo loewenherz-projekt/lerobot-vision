@@ -22,8 +22,15 @@ provided checkboxes.
 
 ### 1. Install dependencies
 
-Run `./setup.sh` once to install system requirements, initialise submodules and build the workspace. This script assumes an Ubuntu system with ROS 2 Humble available via apt.
+Before running the setup script make sure the submodules are present:
 
+```bash
+git submodule update --init --recursive
+```
+
+Verify that every `external/*` directory contains files. `setup.sh` will exit if any of them are empty.
+
+Run `./setup.sh` once to install system requirements and build the workspace. This script assumes an Ubuntu system with ROS 2 Humble available via apt.
 ### 2. Create the Conda environment
 
 Create and activate the `lerobot-vision` Conda environment:
