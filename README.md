@@ -16,7 +16,25 @@ simple calibration wizard.
 
 Run `./setup.sh` once to install system requirements, initialise submodules and build the workspace. This script assumes an Ubuntu system with ROS 2 Humble available via apt.
 
-### 2. Running the demo
+### 2. Create the Conda environment
+
+Create and activate the `lerobot-vision` Conda environment:
+
+```bash
+conda env create -f environment.yml
+conda activate lerobot-vision
+```
+
+If you do not use Conda, install the Python requirements manually:
+
+```bash
+pip install -r requirements.txt
+```
+
+Always activate the environment before running tests or `run.sh`.
+
+
+### 3. Running the demo
 
 Use `./run.sh` to activate the Conda environment (if present), source ROS 2 and launch `system_launch.py` which starts the example nodes.
 
@@ -26,7 +44,7 @@ For a quick preview of the camera feed and a simple calibration helper you can r
 python -m lerobot_vision.gui
 ```
 
-### 3. Project structure
+### 4. Project structure
 
 ```
 ws/
@@ -46,9 +64,11 @@ Key modules include:
 
 The `create_structure.sh` helper can recreate the basic directory tree and some boilerplate files.
 
-### 4. Tests
+### 5. Tests
 
 Unit tests live in `ws/src/lerobot_vision/tests`. Run them using:
+
+Make sure the `lerobot-vision` Conda environment is activated before running the tests.
 
 ```bash
 pytest
@@ -56,11 +76,11 @@ pytest
 
 The tests rely on lightweight stubs for ROS messages so they do not require a full ROS installation during development.
 
-### 5. CI
+### 6. CI
 
 The GitHub workflow at `.github/workflows/ci.yml` builds the workspace with `colcon`, runs the linters and executes the unit tests with coverage reporting via Codecov.
 
-### 6. Visualization
+### 7. Visualization
 
 Image topics can be previewed with `rqt_image_view`:
 
