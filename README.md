@@ -7,8 +7,10 @@ lightweight wrapper around NVIDIA DOPE for pose estimation. Heavy weight
 dependencies (YOLO3D, StereoAnywhere, MoveIt etc.) are provided as Git
 submodules under `external/`.
 
-An optional Tkinter GUI (`VisionGUI`) can be used to preview images and run a
-simple calibration wizard.
+An optional Tkinter GUI (`VisionGUI`) can be used to preview images, run a
+simple calibration wizard and display additional views. Rectified frames,
+depth maps and segmentation overlays can be toggled on or off using the
+provided checkboxes.
 
 ## Getting started
 
@@ -43,6 +45,8 @@ For a quick preview of the camera feed and a simple calibration helper you can r
 ```bash
 python -m lerobot_vision.gui
 ```
+
+The GUI contains checkboxes to enable rectified, depth and overlay views.
 
 ### 4. Project structure
 
