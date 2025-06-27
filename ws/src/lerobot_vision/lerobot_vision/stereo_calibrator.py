@@ -54,22 +54,25 @@ class StereoCalibrator:
         self.right_points.append(corners_r)
         return True
 
-    def calibrate(self, image_size: Tuple[int, int]) -> Tuple[
+    def calibrate(
+        self, image_size: Tuple[int, int], return_errors: bool = False
+    ) -> Tuple[
         np.ndarray,
         np.ndarray,
         np.ndarray,
         np.ndarray,
         np.ndarray,
         np.ndarray,
+        List[Tuple[float, float]] | None,
     ]:
         """Run stereo calibration and return intrinsics and extrinsics."""
         if not self.objpoints:
             raise RuntimeError("No corners accumulated")
 
-        ret_l, m1, d1, _, _ = cv2.calibrateCamera(
+        ret_l, m1, d1, rvecs_l, tvecs_l = cv2.calibrateCamera(
             self.objpoints, self.left_points, image_size, None, None
         )
-        ret_r, m2, d2, _, _ = cv2.calibrateCamera(
+        ret_r, m2, d2, rvecs_r, tvecs_r = cv2.calibrateCamera(
             self.objpoints, self.right_points, image_size, None, None
         )
         if not ret_l or not ret_r:
@@ -90,7 +93,27 @@ class StereoCalibrator:
         if not ret:  # pragma: no cover - runtime
             raise RuntimeError("Stereo calibration failed")
 
-        return m1, d1, m2, d2, r, t
+        errors = None
+        if return_errors:
+            errors = []
+            for i, objp in enumerate(self.objpoints):
+                proj_l, _ = cv2.projectPoints(
+                    objp, rvecs_l[i], tvecs_l[i], m1, d1
+                )
+                err_l = (
+                    cv2.norm(self.left_points[i], proj_l, cv2.NORM_L2)
+                    / len(proj_l)
+                )
+                proj_r, _ = cv2.projectPoints(
+                    objp, rvecs_r[i], tvecs_r[i], m2, d2
+                )
+                err_r = (
+                    cv2.norm(self.right_points[i], proj_r, cv2.NORM_L2)
+                    / len(proj_r)
+                )
+                errors.append((float(err_l), float(err_r)))
+
+        return m1, d1, m2, d2, r, t, errors
 
     def save(
         self,
