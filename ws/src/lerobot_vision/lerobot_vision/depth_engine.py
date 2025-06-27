@@ -27,7 +27,12 @@ class DepthEngine:
     """Compute depth from stereo images."""
 
     def __init__(
-        self, model_path: Optional[str] = None, *, use_cuda: bool = True
+        self,
+        model_path: Optional[str] = None,
+        *,
+        use_cuda: bool = True,
+        baseline: float = 1.0,
+        focal: float = 1.0,
     ) -> None:
         """Create the depth engine.
 
@@ -38,6 +43,8 @@ class DepthEngine:
         """
         self.model_path = model_path
         self.use_cuda = use_cuda
+        self.baseline = baseline
+        self.focal = focal
         self.cuda_matcher = None
         self.wls_filter = None
         if not use_cuda and isinstance(StereoAnywhere, type):
@@ -95,7 +102,11 @@ class DepthEngine:
             disparity = self.cuda_matcher.compute(left, right)
             if self.wls_filter is not None:
                 disparity = self.wls_filter.filter(disparity, left)
-            return disparity.astype(np.float32)
+            disparity = disparity.astype(np.float32)
+            with np.errstate(divide="ignore"):
+                depth = (self.focal * self.baseline) / disparity
+            depth[disparity == 0] = 0
+            return depth
         except Exception as exc:  # pragma: no cover - runtime path
             logging.error("Depth computation failed: %s", exc)
             raise
