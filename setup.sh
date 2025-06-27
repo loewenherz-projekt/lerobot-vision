@@ -16,6 +16,13 @@ rosdep update
 # Fetch submodules
 git submodule update --init --recursive
 
+# Warn if any submodule directories are empty
+for d in external/*; do
+  if [ -d "$d" ] && [ -z "$(ls -A "$d")" ]; then
+    echo "Warning: submodule directory '$d' is empty. Did git fetch succeed?"
+  fi
+done
+
 # Install Python requirements
 pip install -r requirements.txt
 
