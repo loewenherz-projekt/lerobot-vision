@@ -62,9 +62,9 @@ For a quick preview of the camera feed and a simple calibration helper you can r
 vision_gui
 ```
 
-The GUI contains checkboxes to enable rectified, depth, disparity, mask and
-overlay views. Additional buttons allow saving a screenshot or recording the
-current overlay for later analysis.
+#### Using the GUI
+
+The interface offers checkboxes to toggle rectified, depth, disparity, mask and overlay windows. Screenshots and overlay recordings can be captured via the corresponding buttons. Publishers for individual image topics can be toggled at runtime through the `toggle_publisher` service.
 
 ### 4. Project structure
 
