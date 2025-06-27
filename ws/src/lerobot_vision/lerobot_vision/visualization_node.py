@@ -21,6 +21,7 @@ from .yolo3d_engine import Yolo3DEngine
 from .pose_estimator import PoseEstimator
 from .object_localizer import localize_objects
 from .image_rectifier import ImageRectifier
+from .fusion import FusionModule
 
 
 class VisualizationNode(Node):
@@ -54,11 +55,15 @@ class VisualizationNode(Node):
             .string_value
         )
         p_left_raw = (
-            self.get_parameter("publish_left_raw").get_parameter_value().integer_value
+            self.get_parameter("publish_left_raw")
+            .get_parameter_value()
+            .integer_value
             == 1
         )
         p_right_raw = (
-            self.get_parameter("publish_right_raw").get_parameter_value().integer_value
+            self.get_parameter("publish_right_raw")
+            .get_parameter_value()
+            .integer_value
             == 1
         )
         p_left_rect = (
@@ -74,11 +79,15 @@ class VisualizationNode(Node):
             == 1
         )
         p_depth = (
-            self.get_parameter("publish_depth").get_parameter_value().integer_value
+            self.get_parameter("publish_depth")
+            .get_parameter_value()
+            .integer_value
             == 1
         )
         p_overlay = (
-            self.get_parameter("publish_overlay").get_parameter_value().integer_value
+            self.get_parameter("publish_overlay")
+            .get_parameter_value()
+            .integer_value
             == 1
         )
         self.bridge = CvBridge()
@@ -86,6 +95,7 @@ class VisualizationNode(Node):
         self.depth_engine = DepthEngine()
         self.yolo_engine = Yolo3DEngine(ckpt_path)
         self.pose_estimator = PoseEstimator()
+        self.fusion = FusionModule(self)
         self.pub = (
             self.create_publisher(Image, "/openyolo3d/overlay", 10)
             if p_overlay
@@ -112,7 +122,9 @@ class VisualizationNode(Node):
             else None
         )
         self.pub_depth = (
-            self.create_publisher(Image, "/stereo/depth", 10) if p_depth else None
+            self.create_publisher(Image, "/stereo/depth", 10)
+            if p_depth
+            else None
         )
         self.rectifier: ImageRectifier | None = None
         self.create_timer(0.2, self._on_timer)
@@ -151,6 +163,7 @@ class VisualizationNode(Node):
             _ = localize_objects(
                 masks, depth, StereoCamera.camera_matrix, labels, poses
             )
+            self.fusion.publish(masks, labels, poses)
             overlay = self._draw_overlay(left_r, masks, labels, depth, poses)
             if self.pub:
                 msg = self.bridge.cv2_to_imgmsg(overlay, encoding="bgr8")

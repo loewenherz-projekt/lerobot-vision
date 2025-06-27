@@ -7,6 +7,7 @@ import numpy as np
 import rclpy
 from sensor_msgs.msg import Image
 
+from lerobot_vision import visualization_node
 from lerobot_vision.visualization_node import VisualizationNode
 
 
@@ -74,6 +75,7 @@ def test_on_timer(monkeypatch):
             )  # noqa: E501
         ),
     )
+
     class DummyRect:
         def __init__(self, *args, **kwargs):
             pass
@@ -86,6 +88,22 @@ def test_on_timer(monkeypatch):
         DummyRect,
     )
 
+    class DummyFusion:
+        def __init__(self, *args, **kwargs):
+            self.pc_pub = mock.Mock(publish=mock.Mock())
+            self.det_pub = mock.Mock(publish=mock.Mock())
+            self.publish = mock.Mock(side_effect=self._do_publish)
+
+        def _do_publish(self, masks, labels, poses):
+            self.pc_pub.publish("pc")
+            self.det_pub.publish("det")
+
+    fusion_inst = DummyFusion()
+    monkeypatch.setattr(
+        "lerobot_vision.visualization_node.FusionModule",
+        mock.Mock(return_value=fusion_inst),
+    )
+
     rclpy.init(args=None)
     node = VisualizationNode("/tmp")
     node.pub.publish = mock.Mock()
@@ -94,6 +112,9 @@ def test_on_timer(monkeypatch):
     loc_mock.assert_called_once()
     args, _ = loc_mock.call_args
     assert len(args) == 5
+    fusion_inst.publish.assert_called_once()
+    fusion_inst.pc_pub.publish.assert_called_once()
+    fusion_inst.det_pub.publish.assert_called_once()
     rclpy.shutdown()
 
 
@@ -134,6 +155,10 @@ def test_draw_overlay(monkeypatch):
             )
         ),
     )
+    monkeypatch.setattr(
+        "lerobot_vision.visualization_node.FusionModule",
+        mock.Mock(return_value=mock.Mock()),
+    )
 
     monkeypatch.setattr("cv2.rectangle", mock.Mock())
     monkeypatch.setattr("cv2.putText", mock.Mock())
@@ -152,3 +177,28 @@ def test_draw_overlay(monkeypatch):
     assert cv2.putText.call_count >= 1
     assert cv2.line.call_count == 3
     rclpy.shutdown()
+
+
+def test_main(monkeypatch):
+    node = mock.Mock(destroy_node=mock.Mock())
+    monkeypatch.setattr(
+        "lerobot_vision.visualization_node.VisualizationNode",
+        mock.Mock(return_value=node),
+    )
+    monkeypatch.setattr(
+        "lerobot_vision.visualization_node.rclpy.init", mock.Mock()
+    )
+    spin = mock.Mock()
+    monkeypatch.setattr(visualization_node.rclpy, "spin", spin, raising=False)
+    shutdown = mock.Mock()
+    monkeypatch.setattr(
+        visualization_node.rclpy,
+        "shutdown",
+        shutdown,
+        raising=False,
+    )
+
+    visualization_node.main([])
+    spin.assert_called_once_with(node)
+    node.destroy_node.assert_called_once()
+    shutdown.assert_called_once()

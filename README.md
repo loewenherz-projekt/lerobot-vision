@@ -98,6 +98,11 @@ the computed depth map. These outputs can be enabled individually via the
 `publish_left_raw`, `publish_right_raw`, `publish_left_rectified`,
 `publish_right_rectified` and `publish_depth` ROS parameters.
 
+In addition, 3D detections are published on:
+
+* ``/robot/vision/points`` (`sensor_msgs/PointCloud2`)
+* ``/robot/vision/detections`` (`vision_msgs/Detection3DArray`)
+
 Start `web_video_server` to stream a topic in the browser:
 
 ```bash
