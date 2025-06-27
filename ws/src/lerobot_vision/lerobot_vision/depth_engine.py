@@ -61,7 +61,13 @@ class DepthEngine:
             if not use_cuda:
                 logging.error("StereoAnywhere is unavailable")
 
-    def compute_depth(self, left: np.ndarray, right: np.ndarray) -> np.ndarray:
+    def compute_depth(
+        self,
+        left: np.ndarray,
+        right: np.ndarray,
+        *,
+        return_disparity: bool = False,
+    ) -> np.ndarray | tuple[np.ndarray, np.ndarray | None]:
         """Compute a depth map from a pair of images.
 
         Args:
@@ -69,7 +75,9 @@ class DepthEngine:
             right: Right image array.
 
         Returns:
-            The computed depth map.
+            The computed depth map. When ``return_disparity`` is ``True`` a
+            tuple ``(depth, disparity)`` is returned. ``disparity`` will be
+            ``None`` when disparity computation is unavailable.
         """
         if (
             not isinstance(left, np.ndarray)
@@ -80,7 +88,8 @@ class DepthEngine:
 
         if self.engine is not None and not self.use_cuda:
             try:
-                return self.engine.infer(left, right)
+                depth = self.engine.infer(left, right)
+                return (depth, None) if return_disparity else depth
             except Exception as exc:  # pragma: no cover - runtime path
                 logging.error("Depth computation failed: %s", exc)
                 raise
@@ -106,6 +115,8 @@ class DepthEngine:
             with np.errstate(divide="ignore"):
                 depth = (self.focal * self.baseline) / disparity
             depth[disparity == 0] = 0
+            if return_disparity:
+                return depth, disparity
             return depth
         except Exception as exc:  # pragma: no cover - runtime path
             logging.error("Depth computation failed: %s", exc)
