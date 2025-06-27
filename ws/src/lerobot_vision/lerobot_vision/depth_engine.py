@@ -33,7 +33,8 @@ class DepthEngine:
 
         Args:
             model_path: Optional path to a trained ``StereoAnywhere`` model.
-            use_cuda: Use CUDA accelerated SGBM. Set ``False`` for CPU fallback.
+            use_cuda: Use CUDA accelerated SGBM. Set ``False`` for CPU
+                fallback.
         """
         self.model_path = model_path
         self.use_cuda = use_cuda
@@ -63,7 +64,10 @@ class DepthEngine:
         Returns:
             The computed depth map.
         """
-        if not isinstance(left, np.ndarray) or not isinstance(right, np.ndarray):
+        if (
+            not isinstance(left, np.ndarray)
+            or not isinstance(right, np.ndarray)
+        ):
             logging.error("Invalid input to compute_depth")
             raise ValueError("Invalid input")
 
@@ -85,7 +89,9 @@ class DepthEngine:
                     blockSize=5,
                 )
                 if ximgproc is not None:
-                    self.wls_filter = ximgproc.createDisparityWLSFilterGeneric(False)
+                    self.wls_filter = ximgproc.createDisparityWLSFilterGeneric(
+                        False
+                    )
             disparity = self.cuda_matcher.compute(left, right)
             if self.wls_filter is not None:
                 disparity = self.wls_filter.filter(disparity, left)
