@@ -28,6 +28,9 @@ Before running the setup script make sure the submodules are present:
 git submodule update --init --recursive
 ```
 
+After fetching the submodules run `./fetch_models.sh` to download the
+pretrained DOPE and YOLO3D checkpoints required by the demo.
+
 Verify that every `external/*` directory contains files. `setup.sh` will exit if any of them are empty.
 
 Run `./setup.sh` once to install system requirements and build the workspace. This script assumes an Ubuntu system with ROS 2 Humble available via apt.
@@ -51,7 +54,7 @@ Always activate the environment before running tests or `run.sh`.
 
 ### 3. Running the demo
 
-Use `./run.sh` to activate the Conda environment (if present), source ROS 2 and launch `system_launch.py` which starts the example nodes.
+Use `./run.sh` to activate the Conda environment (if present), source ROS 2 and launch `system_launch.py` which starts the example nodes. Pass `--gui` to start the GUI alongside the pipeline.
 
 For a quick preview of the camera feed and a simple calibration helper you can run:
 
@@ -60,7 +63,8 @@ vision_gui
 ```
 
 The GUI contains checkboxes to enable rectified, depth, disparity, mask and
-overlay views.
+overlay views. Additional buttons allow saving a screenshot or recording the
+current overlay for later analysis.
 
 ### 4. Project structure
 
@@ -115,6 +119,8 @@ The visualization node publishes the raw and rectified camera frames as well as
 the computed depth map. These outputs can be enabled individually via the
 `publish_left_raw`, `publish_right_raw`, `publish_left_rectified`,
 `publish_right_rectified` and `publish_depth` ROS parameters.
+The overlay view combines these results into an image showing bounding boxes,
+labels, distances, relative positions and pose axes for each detected object.
 
 In addition, 3D detections are published on:
 
@@ -128,6 +134,8 @@ ros2 service call /visualization_node/toggle_publisher \
   lerobot_vision/srv/TogglePublisher "{publisher: 'left_raw', enable: true}"
 ros2 service call /visualization_node/toggle_publisher \
   lerobot_vision/srv/TogglePublisher "{publisher: 'left_raw', enable: false}"
+ros2 service call /visualization_node/toggle_publisher \
+  lerobot_vision/srv/TogglePublisher "{publisher: 'overlay', enable: false}"
 ```
 
 Start `web_video_server` to stream a topic in the browser:

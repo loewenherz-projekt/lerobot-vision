@@ -63,6 +63,10 @@ class VisionGUI:  # pragma: no cover - GUI helper
         self.show_mask_var = tk.BooleanVar(value=False)
         self.show_disp_var = tk.BooleanVar(value=False)
 
+        self.record_var = tk.BooleanVar(value=False)
+        self.video_writer = None
+        self._last_frame: np.ndarray | None = None
+
         tk.Checkbutton(
             self.root,
             text="Rectified",
@@ -92,6 +96,17 @@ class VisionGUI:  # pragma: no cover - GUI helper
             text="Overlay",
             variable=self.show_overlay_var,
             command=self._toggle_overlay,
+        ).pack(side=tk.LEFT)
+        tk.Button(
+            self.root,
+            text="Screenshot",
+            command=self._save_screenshot,
+        ).pack(side=tk.LEFT)
+        tk.Checkbutton(
+            self.root,
+            text="Record",
+            variable=self.record_var,
+            command=self._toggle_record,
         ).pack(side=tk.LEFT)
 
         self.rect_window: tk.Toplevel | None = None
@@ -138,6 +153,7 @@ class VisionGUI:  # pragma: no cover - GUI helper
                 left, right = self.camera.get_frames()
             except Exception:
                 continue
+            overlay = None
             self._show_image(left, self.left_label)
             self._show_image(right, self.right_label)
 
@@ -260,6 +276,11 @@ class VisionGUI:  # pragma: no cover - GUI helper
                     dnorm.astype(np.uint8), cv2.COLORMAP_INFERNO
                 )
                 self._show_image(dcol, self.disp_label)
+            self._last_frame = (
+                overlay if "overlay" in locals() and overlay is not None else left_r
+            )
+            if self.video_writer is not None and self._last_frame is not None:
+                self.video_writer.write(self._last_frame)
             self.root.update_idletasks()
             self.root.update()
 
@@ -371,6 +392,21 @@ class VisionGUI:  # pragma: no cover - GUI helper
         elif self.disp_window is not None:
             self.disp_window.destroy()
             self.disp_window = None
+
+    def _toggle_record(self) -> None:  # pragma: no cover - runtime GUI
+        if self.record_var.get():
+            fourcc = cv2.VideoWriter_fourcc(*"XVID")
+            h, w = self.camera.get_frames()[0].shape[:2]
+            self.video_writer = cv2.VideoWriter(
+                "record.avi", fourcc, 20.0, (w, h)
+            )
+        elif self.video_writer is not None:
+            self.video_writer.release()
+            self.video_writer = None
+
+    def _save_screenshot(self) -> None:  # pragma: no cover - runtime GUI
+        if self._last_frame is not None:
+            cv2.imwrite("screenshot.png", self._last_frame)
 
     def _draw_overlay(
         self,

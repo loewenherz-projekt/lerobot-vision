@@ -4,6 +4,9 @@ set -e
 # Fetch submodules before doing anything else
 git submodule update --init --recursive
 
+# Fetch pretrained checkpoints for YOLO3D and DOPE
+./fetch_models.sh || true
+
 # Exit if any external directory is empty
 empty=0
 for d in external/*; do
