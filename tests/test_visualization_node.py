@@ -40,15 +40,15 @@ def test_on_timer(monkeypatch):
         np.zeros(5),
         raising=False,
     )
+    def compute_depth(*args, **kwargs):
+        if kwargs.get("return_disparity"):
+            depth = np.zeros((1, 1), dtype=np.float32)
+            return depth, np.zeros_like(depth)
+        return np.zeros((1, 1), dtype=np.float32)
+
     monkeypatch.setattr(
         "lerobot_vision.visualization_node.DepthEngine",
-        mock.Mock(
-            return_value=mock.Mock(
-                compute_depth=mock.Mock(
-                    return_value=np.zeros((1, 1), dtype=np.float32)
-                )  # noqa: E501
-            )
-        ),
+        mock.Mock(return_value=mock.Mock(compute_depth=mock.Mock(side_effect=compute_depth))),
     )
     monkeypatch.setattr(
         "lerobot_vision.visualization_node.Yolo3DEngine",
@@ -208,15 +208,15 @@ def test_toggle_service(monkeypatch):
         np.zeros(5),
         raising=False,
     )
+    def compute_depth(*args, **kwargs):
+        if kwargs.get("return_disparity"):
+            depth = np.zeros((1, 1), dtype=np.float32)
+            return depth, np.zeros_like(depth)
+        return np.zeros((1, 1), dtype=np.float32)
+
     monkeypatch.setattr(
         "lerobot_vision.visualization_node.DepthEngine",
-        mock.Mock(
-            return_value=mock.Mock(
-                compute_depth=mock.Mock(
-                    return_value=np.zeros((1, 1), dtype=np.float32)
-                )
-            )
-        ),
+        mock.Mock(return_value=mock.Mock(compute_depth=mock.Mock(side_effect=compute_depth))),
     )
     monkeypatch.setattr(
         "lerobot_vision.visualization_node.Yolo3DEngine",
@@ -285,6 +285,19 @@ def test_toggle_service(monkeypatch):
     node.pub.publish = mock.Mock()
     node._on_timer()
     node.pub.publish.assert_called_once()
+
+    # Enable disparity and masks publishers and ensure they are used
+    req = TogglePublisher.Request(publisher="disparity", enable=True)
+    node.toggle_srv.call(req)
+    node.pub_disparity.publish = mock.Mock()
+
+    req = TogglePublisher.Request(publisher="masks", enable=True)
+    node.toggle_srv.call(req)
+    node.pub_masks.publish = mock.Mock()
+
+    node._on_timer()
+    node.pub_disparity.publish.assert_called_once()
+    node.pub_masks.publish.assert_called_once()
     rclpy.shutdown()
 
 

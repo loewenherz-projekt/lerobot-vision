@@ -61,6 +61,8 @@ class VisualizationNode(Node):
         self.declare_parameter("publish_left_rectified", False)
         self.declare_parameter("publish_right_rectified", False)
         self.declare_parameter("publish_depth", False)
+        self.declare_parameter("publish_disparity", False)
+        self.declare_parameter("publish_masks", False)
         self.declare_parameter("publish_overlay", True)
         self.declare_parameter("use_cuda", True)
         config_path = (
@@ -99,6 +101,18 @@ class VisualizationNode(Node):
         )
         p_depth = (
             self.get_parameter("publish_depth")
+            .get_parameter_value()
+            .integer_value
+            == 1
+        )
+        p_disparity = (
+            self.get_parameter("publish_disparity")
+            .get_parameter_value()
+            .integer_value
+            == 1
+        )
+        p_masks = (
+            self.get_parameter("publish_masks")
             .get_parameter_value()
             .integer_value
             == 1
@@ -151,6 +165,16 @@ class VisualizationNode(Node):
             if p_depth
             else None
         )
+        self.pub_disparity = (
+            self.create_publisher(Image, "/stereo/disparity", 10)
+            if p_disparity
+            else None
+        )
+        self.pub_masks = (
+            self.create_publisher(Image, "/openyolo3d/masks", 10)
+            if p_masks
+            else None
+        )
         self.rectifier: ImageRectifier | None = None
         self.create_timer(0.2, self._on_timer)
         self.toggle_srv = self.create_service(
@@ -182,11 +206,35 @@ class VisualizationNode(Node):
             if self.pub_right_rect:
                 msg = self.bridge.cv2_to_imgmsg(right_r, encoding="bgr8")
                 self.pub_right_rect.publish(msg)
-            depth = self.depth_engine.compute_depth(left_r, right_r)
+            if self.pub_depth or self.pub_disparity:
+                depth, disp = self.depth_engine.compute_depth(
+                    left_r, right_r, return_disparity=True
+                )
+            else:
+                depth = self.depth_engine.compute_depth(left_r, right_r)
+                disp = None
             if self.pub_depth:
                 msg = self.bridge.cv2_to_imgmsg(depth, encoding="32FC1")
                 self.pub_depth.publish(msg)
+            if self.pub_disparity and disp is not None:
+                msg = self.bridge.cv2_to_imgmsg(disp, encoding="32FC1")
+                self.pub_disparity.publish(msg)
             masks, labels = self.yolo_engine.segment([left_r], depth)
+            if self.pub_masks:
+                mask_img = np.zeros_like(left_r)
+                palette = [
+                    (255, 0, 0),
+                    (0, 255, 0),
+                    (0, 0, 255),
+                    (255, 255, 0),
+                    (255, 0, 255),
+                    (0, 255, 255),
+                ]
+                for idx, mask in enumerate(masks):
+                    color = palette[idx % len(palette)]
+                    mask_img[mask > 0] = color
+                msg = self.bridge.cv2_to_imgmsg(mask_img, encoding="bgr8")
+                self.pub_masks.publish(msg)
             poses = self.pose_estimator.estimate(left_r)
             _ = localize_objects(
                 masks, depth, StereoCamera.camera_matrix, labels, poses
@@ -319,6 +367,14 @@ class VisualizationNode(Node):
             "depth": (
                 "pub_depth",
                 (Image, "/stereo/depth", 10),
+            ),
+            "disparity": (
+                "pub_disparity",
+                (Image, "/stereo/disparity", 10),
+            ),
+            "masks": (
+                "pub_masks",
+                (Image, "/openyolo3d/masks", 10),
             ),
         }
 
