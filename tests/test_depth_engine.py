@@ -37,7 +37,7 @@ def test_init_custom_model():
 
 def test_cuda_fallback(monkeypatch):
     dummy = np.zeros((1, 1, 3), dtype=np.uint8)
-    disp = np.zeros((1, 1), dtype=np.float32)
+    disp = np.ones((1, 1), dtype=np.float32)
     matcher = mock.Mock(compute=mock.Mock(return_value=disp))
     wls = mock.Mock(filter=mock.Mock(return_value=disp))
     import types
@@ -56,8 +56,9 @@ def test_cuda_fallback(monkeypatch):
         mock.Mock(createDisparityWLSFilterGeneric=mock.Mock(return_value=wls)),
         raising=False,
     )
-    engine = DepthEngine(use_cuda=True)
+    engine = DepthEngine(use_cuda=True, baseline=0.5, focal=2.0)
     result = engine.compute_depth(dummy, dummy)
-    assert np.array_equal(result, disp)
+    expected = (engine.focal * engine.baseline) / disp
+    assert np.allclose(result, expected)
     matcher.compute.assert_called_once()
     wls.filter.assert_called_once()
