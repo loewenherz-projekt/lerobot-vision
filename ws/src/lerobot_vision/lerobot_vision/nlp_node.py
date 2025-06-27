@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from typing import Dict, List
 
 import openai
@@ -19,6 +20,7 @@ class NlpNode(Node):
     def __init__(self) -> None:
         """Initialize the NLP node."""
         super().__init__("nlp_node")
+        openai.api_key = os.environ.get("OPENAI_API_KEY")
         self.sub = self.create_subscription(
             String,
             "/robot/vision/scene",
