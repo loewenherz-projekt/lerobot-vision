@@ -61,6 +61,17 @@ if "rclpy" not in sys.modules:
         def create_timer(self, *args, **kwargs):
             return None
 
+        def create_service(self, srv_type, name, callback):
+            class Service:
+                def __init__(self, cb):
+                    self._cb = cb
+
+                def call(self, request):
+                    response = srv_type.Response()
+                    return self._cb(request, response)
+
+            return Service(callback)
+
     node_module.Node = Node
     rclpy.node = node_module
     rclpy.init = lambda args=None: None

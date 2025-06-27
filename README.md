@@ -98,6 +98,15 @@ the computed depth map. These outputs can be enabled individually via the
 `publish_left_raw`, `publish_right_raw`, `publish_left_rectified`,
 `publish_right_rectified` and `publish_depth` ROS parameters.
 
+You can toggle these publishers at runtime using the `toggle_publisher` service:
+
+```bash
+ros2 service call /visualization_node/toggle_publisher \
+  lerobot_vision/srv/TogglePublisher "{publisher: 'left_raw', enable: true}"
+ros2 service call /visualization_node/toggle_publisher \
+  lerobot_vision/srv/TogglePublisher "{publisher: 'left_raw', enable: false}"
+```
+
 Start `web_video_server` to stream a topic in the browser:
 
 ```bash

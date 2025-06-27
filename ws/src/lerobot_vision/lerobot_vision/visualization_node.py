@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import logging
 from typing import List, Tuple
+from dataclasses import dataclass
 
 import cv2
 import numpy as np
@@ -21,6 +22,20 @@ from .yolo3d_engine import Yolo3DEngine
 from .pose_estimator import PoseEstimator
 from .object_localizer import localize_objects
 from .image_rectifier import ImageRectifier
+
+
+class TogglePublisher:
+    """Service for toggling publishers."""
+
+    @dataclass
+    class Request:
+        publisher: str = ""
+        enable: bool = True
+
+    @dataclass
+    class Response:
+        success: bool = False
+        message: str = ""
 
 
 class VisualizationNode(Node):
@@ -54,11 +69,15 @@ class VisualizationNode(Node):
             .string_value
         )
         p_left_raw = (
-            self.get_parameter("publish_left_raw").get_parameter_value().integer_value
+            self.get_parameter("publish_left_raw")
+            .get_parameter_value()
+            .integer_value
             == 1
         )
         p_right_raw = (
-            self.get_parameter("publish_right_raw").get_parameter_value().integer_value
+            self.get_parameter("publish_right_raw")
+            .get_parameter_value()
+            .integer_value
             == 1
         )
         p_left_rect = (
@@ -74,11 +93,15 @@ class VisualizationNode(Node):
             == 1
         )
         p_depth = (
-            self.get_parameter("publish_depth").get_parameter_value().integer_value
+            self.get_parameter("publish_depth")
+            .get_parameter_value()
+            .integer_value
             == 1
         )
         p_overlay = (
-            self.get_parameter("publish_overlay").get_parameter_value().integer_value
+            self.get_parameter("publish_overlay")
+            .get_parameter_value()
+            .integer_value
             == 1
         )
         self.bridge = CvBridge()
@@ -112,10 +135,15 @@ class VisualizationNode(Node):
             else None
         )
         self.pub_depth = (
-            self.create_publisher(Image, "/stereo/depth", 10) if p_depth else None
+            self.create_publisher(Image, "/stereo/depth", 10)
+            if p_depth
+            else None
         )
         self.rectifier: ImageRectifier | None = None
         self.create_timer(0.2, self._on_timer)
+        self.toggle_srv = self.create_service(
+            TogglePublisher, "toggle_publisher", self._toggle_publisher
+        )
 
     def _on_timer(self) -> None:
         try:
@@ -248,6 +276,54 @@ class VisualizationNode(Node):
                     pt2 = _project(center + axis)
                     cv2.line(image, (int(u), int(v)), pt2, color, 2)
         return image
+
+    def _toggle_publisher(
+        self,
+        request: TogglePublisher.Request,
+        response: TogglePublisher.Response,
+    ) -> TogglePublisher.Response:
+        mapping = {
+            "overlay": (
+                "pub",
+                (Image, "/openyolo3d/overlay", 10),
+            ),
+            "left_raw": (
+                "pub_left_raw",
+                (Image, "/stereo/left_raw", 10),
+            ),
+            "right_raw": (
+                "pub_right_raw",
+                (Image, "/stereo/right_raw", 10),
+            ),
+            "left_rectified": (
+                "pub_left_rect",
+                (Image, "/stereo/left_rectified", 10),
+            ),
+            "right_rectified": (
+                "pub_right_rect",
+                (Image, "/stereo/right_rectified", 10),
+            ),
+            "depth": (
+                "pub_depth",
+                (Image, "/stereo/depth", 10),
+            ),
+        }
+
+        if request.publisher not in mapping:
+            response.success = False
+            response.message = "unknown publisher"
+            return response
+
+        attr, (msg_type, topic, depth) = mapping[request.publisher]
+        if request.enable:
+            if getattr(self, attr) is None:
+                setattr(
+                    self, attr, self.create_publisher(msg_type, topic, depth)
+                )
+        else:
+            setattr(self, attr, None)
+        response.success = True
+        return response
 
 
 def main(args: list[str] | None = None) -> None:
