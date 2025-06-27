@@ -27,6 +27,7 @@ setup(
             "nlp_node=lerobot_vision.nlp_node:main",
             "planner_node=lerobot_vision.planner_node:main",
             "control_node=lerobot_vision.control_node:main",
+            "vision_gui=lerobot_vision.gui:main",
         ],
     },
 )

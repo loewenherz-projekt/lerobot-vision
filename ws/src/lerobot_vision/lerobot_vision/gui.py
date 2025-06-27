@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import threading
 import tkinter as tk
 from pathlib import Path
@@ -386,3 +387,32 @@ class VisionGUI:  # pragma: no cover - GUI helper
         self.root.mainloop()
         self._running = False
         self.camera.release()
+
+
+def main(args: list[str] | None = None) -> None:
+    """Entry point for the ``vision_gui`` executable."""
+    parser = argparse.ArgumentParser(description="Simple camera GUI")
+    parser.add_argument(
+        "--config",
+        help="Path to calibration YAML file",
+        default=None,
+    )
+    parser.add_argument(
+        "--left",
+        type=int,
+        default=0,
+        help="Left camera device index",
+    )
+    parser.add_argument(
+        "--right",
+        type=int,
+        default=1,
+        help="Right camera device index",
+    )
+    opts = parser.parse_args(args)
+    cam = AsyncStereoCamera(opts.left, opts.right, config_path=opts.config)
+    VisionGUI(cam).run()
+
+
+if __name__ == "__main__":  # pragma: no cover - manual execution
+    main()
