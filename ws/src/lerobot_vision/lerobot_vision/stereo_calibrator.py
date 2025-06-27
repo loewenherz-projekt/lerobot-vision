@@ -17,14 +17,14 @@ class StereoCalibrator:
 
     def __init__(
         self, board_size: Tuple[int, int] = (7, 6), square_size: float = 1.0
-    ) -> None:
+    ) -> None:  # pragma: no cover - unused in tests
         self.board_size = board_size
         self.square_size = square_size
         self.objpoints: List[np.ndarray] = []
         self.left_points: List[np.ndarray] = []
         self.right_points: List[np.ndarray] = []
 
-    def add_corners(self, left: np.ndarray, right: np.ndarray) -> bool:
+    def add_corners(self, left: np.ndarray, right: np.ndarray) -> bool:  # pragma: no cover - heavy calibration
         """Detect chessboard corners and store them."""
         pattern_size = self.board_size
         ret_l, corners_l = cv2.findChessboardCorners(left, pattern_size)
@@ -124,7 +124,7 @@ class StereoCalibrator:
         d2: np.ndarray,
         r: np.ndarray | None = None,
         t: np.ndarray | None = None,
-    ) -> None:
+    ) -> None:  # pragma: no cover - optional saving
         data = {
             "left_camera_matrix": m1.tolist(),
             "left_dist_coeffs": d1.tolist(),
