@@ -1,6 +1,11 @@
 # lerobot-vision
 
-This repository contains a minimal ROS 2 workspace for the `lerobot_vision` package. The package demonstrates camera capture, depth computation, object segmentation and robot control. All heavy weight dependencies (YOLO3D, StereoAnywhere, MoveIt etc.) are provided as Git submodules under `external/`.
+This repository contains a small ROS 2 workspace for the `lerobot_vision` package.  
+The package demonstrates camera capture, depth computation and 3D object localisation.  
+Additional utilities implement stereo calibration, image rectification and a
+lightweight wrapper around NVIDIA DOPE for pose estimation. Heavy weight
+dependencies (YOLO3D, StereoAnywhere, MoveIt etc.) are provided as Git
+submodules under `external/`.
 
 ## Getting started
 
@@ -20,6 +25,15 @@ ws/
     lerobot_vision/          # ROS package
 external/                    # third‑party submodules
 ```
+
+Key modules include:
+
+- ``StereoCalibrator`` – assists with intrinsic and extrinsic calibration
+- ``ImageRectifier`` – rectifies image pairs using calibration results
+- ``DepthEngine`` – wraps StereoAnywhere for disparity estimation
+- ``Yolo3DEngine`` – object detection via OpenYOLO3D
+- ``PoseEstimator`` – thin wrapper around NVIDIA DOPE
+- ``ObjectLocalizer`` – fuses masks, depth and poses into 3D coordinates
 
 The `create_structure.sh` helper can recreate the basic directory tree and some boilerplate files.
 

@@ -17,6 +17,8 @@ from pathlib import Path
 from .camera_interface import StereoCamera
 from .depth_engine import DepthEngine
 from .yolo3d_engine import Yolo3DEngine
+from .pose_estimator import PoseEstimator
+from .object_localizer import localize_objects
 
 
 class VisualizationNode(Node):
@@ -47,6 +49,7 @@ class VisualizationNode(Node):
         self.camera = StereoCamera(config_path=config_path)
         self.depth_engine = DepthEngine()
         self.yolo_engine = Yolo3DEngine(ckpt_path)
+        self.pose_estimator = PoseEstimator()
         self.pub = self.create_publisher(Image, "/openyolo3d/overlay", 10)
         self.create_timer(0.2, self._on_timer)
 
@@ -55,6 +58,8 @@ class VisualizationNode(Node):
             left, right = self.camera.get_frames()
             depth = self.depth_engine.compute_depth(left, right)
             masks, labels = self.yolo_engine.segment([left], depth)
+            poses = self.pose_estimator.estimate(left)
+            _ = localize_objects(masks, depth, StereoCamera.camera_matrix)
             overlay = self._draw_overlay(left, masks, labels)
             msg = self.bridge.cv2_to_imgmsg(overlay, encoding="bgr8")
             self.pub.publish(msg)
@@ -75,28 +80,19 @@ class VisualizationNode(Node):
             The image with overlays applied.
         """
         for mask, label in zip(masks, labels):
-            pts = np.column_stack(np.nonzero(mask > 0)).astype(np.float32)
-            if pts.size == 0:
+            ys, xs = np.nonzero(mask > 0)
+            if len(xs) == 0:
                 continue
-            points_3d = np.hstack(
-                (pts[:, [1, 0]], np.zeros((pts.shape[0], 1)))
-            )
-            proj, _ = cv2.projectPoints(
-                points_3d,
-                np.zeros(3, dtype=np.float32),
-                np.zeros(3, dtype=np.float32),
-                StereoCamera.camera_matrix,
-                StereoCamera.dist_coeffs,
-            )
-            proj = proj.reshape(-1, 1, 2).astype(int)
-            cv2.polylines(image, [proj], True, (0, 255, 0), 2)
+            x0, x1 = xs.min(), xs.max()
+            y0, y1 = ys.min(), ys.max()
+            cv2.rectangle(image, (x0, y0), (x1, y1), (0, 255, 0), 2)
             cv2.putText(
                 image,
                 label,
-                tuple(proj[0][0]),
+                (int(x0), int(y0) - 10),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                1,
+                0.5,
                 (0, 255, 0),
-                2,
+                1,
             )
         return image

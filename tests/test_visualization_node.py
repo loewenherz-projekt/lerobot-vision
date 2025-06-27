@@ -43,6 +43,14 @@ def test_on_timer(monkeypatch):
         ),
     )
     monkeypatch.setattr(
+        "lerobot_vision.visualization_node.PoseEstimator",
+        mock.Mock(return_value=mock.Mock(estimate=mock.Mock(return_value=[]))),
+    )
+    monkeypatch.setattr(
+        "lerobot_vision.visualization_node.localize_objects",
+        mock.Mock(return_value=[]),
+    )
+    monkeypatch.setattr(
         "lerobot_vision.visualization_node.CvBridge",
         mock.Mock(
             return_value=mock.Mock(
