@@ -48,7 +48,7 @@ class StereoCamera:
         ret_right, right = self.right_cap.read()
         if not ret_left or not ret_right:
             logging.error("Failed to read from camera")
-            raise RuntimeError("Kamerafehler")
+            raise RuntimeError("Failed to read from camera")
         left_ud = cv2.undistort(left, self.camera_matrix, self.dist_coeffs)
         right_ud = cv2.undistort(right, self.camera_matrix, self.dist_coeffs)
         return left_ud, right_ud
@@ -70,7 +70,6 @@ class StereoCamera:
             )
         except Exception as exc:  # pragma: no cover - config optional
             logging.error("Failed to load camera parameters: %s", exc)
-        return None
 
 
 class AsyncStereoCamera(StereoCamera):  # pragma: no cover - optional helper
