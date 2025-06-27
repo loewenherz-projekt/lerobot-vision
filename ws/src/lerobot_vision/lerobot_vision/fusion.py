@@ -51,7 +51,20 @@ class FusionModule:
             A ROS2 ``PointCloud2`` message representing the fused point cloud
             extracted from ``masks``.
         """
-        raise NotImplementedError
+        try:
+            import numpy as np
+        except Exception:  # pragma: no cover - optional dependency
+            np = None  # type: ignore
+
+        points = []
+        if np is not None:
+            for mask in masks:
+                if mask is None:
+                    continue
+                ys, xs = np.nonzero(mask)
+                for x, y in zip(xs, ys):
+                    points.append((float(x), float(y), 0.0))
+        return PointCloud2(points=points)
 
     def _make_detections(
         self, masks: Any, labels: List[str], poses: Any
@@ -59,11 +72,17 @@ class FusionModule:
         """Create a ``Detection3DArray`` message from masks, labels and poses.
 
         Args:
-            masks: List of segmentation masks corresponding to detected objects.
+            masks: Segmentation masks corresponding to detected objects.
             labels: Semantic labels describing each detected object.
             poses: Object poses associated with ``masks`` and ``labels``.
 
         Returns:
             A ROS2 ``Detection3DArray`` message encoding the detections.
         """
-        raise NotImplementedError
+        detections = []
+        for mask, label, pose in zip(masks, labels, poses):
+            detections.append({
+                "label": label,
+                "pose": pose,
+            })
+        return Detection3DArray(detections=detections)
