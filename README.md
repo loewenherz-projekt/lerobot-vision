@@ -60,6 +60,8 @@ Use `./run.sh` to activate the Conda environment (if present), source ROS 2 and 
 ros2 launch lerobot_vision system_launch.py use_cuda:=false
 ```
 
+Set the `OPENAI_API_KEY` environment variable to enable the NLP node.
+
 For a quick preview of the camera feed and a simple calibration helper you can run:
 
 ```bash
