@@ -23,6 +23,7 @@ class StereoCamera:
         left_idx: int = 0,
         right_idx: int = 1,
         config_path: str | None = None,
+        side_by_side: bool = False,
     ) -> None:
         """Initialize the stereo camera interface.
 
@@ -34,8 +35,9 @@ class StereoCamera:
         """
         if config_path:
             self._load_params(config_path)
+        self.side_by_side = side_by_side
         self.left_cap = cv2.VideoCapture(left_idx)
-        self.right_cap = cv2.VideoCapture(right_idx)
+        self.right_cap = None if side_by_side else cv2.VideoCapture(right_idx)
 
     def get_frames(self) -> Tuple[np.ndarray, np.ndarray]:
         """Retrieve frames from both cameras.
@@ -44,11 +46,20 @@ class StereoCamera:
             A tuple ``(left, right)`` of undistorted images captured from the
             left and right cameras respectively.
         """
-        ret_left, left = self.left_cap.read()
-        ret_right, right = self.right_cap.read()
-        if not ret_left or not ret_right:
-            logging.error("Failed to read from camera")
-            raise RuntimeError("Kamerafehler")
+        if self.side_by_side:
+            ret, frame = self.left_cap.read()
+            if not ret:
+                logging.error("Failed to read from camera")
+                raise RuntimeError("Kamerafehler")
+            w = frame.shape[1] // 2
+            left = frame[:, :w]
+            right = frame[:, w:]
+        else:
+            ret_left, left = self.left_cap.read()
+            ret_right, right = self.right_cap.read()
+            if not ret_left or not ret_right:
+                logging.error("Failed to read from camera")
+                raise RuntimeError("Kamerafehler")
         left_ud = cv2.undistort(left, self.camera_matrix, self.dist_coeffs)
         right_ud = cv2.undistort(right, self.camera_matrix, self.dist_coeffs)
         return left_ud, right_ud
@@ -56,7 +67,8 @@ class StereoCamera:
     def release(self) -> None:
         """Release underlying camera resources."""
         self.left_cap.release()
-        self.right_cap.release()
+        if self.right_cap is not None:
+            self.right_cap.release()
 
     @classmethod
     def _load_params(cls, path: str) -> None:

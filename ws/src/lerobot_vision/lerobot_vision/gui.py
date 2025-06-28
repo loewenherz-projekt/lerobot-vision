@@ -537,8 +537,18 @@ def main(args: list[str] | None = None) -> None:
         default=1,
         help="Right camera device index",
     )
+    parser.add_argument(
+        "--side-by-side",
+        action="store_true",
+        help="Use a single device with side-by-side frames",
+    )
     opts = parser.parse_args(args)
-    cam = AsyncStereoCamera(opts.left, opts.right, config_path=opts.config)
+    cam = AsyncStereoCamera(
+        opts.left,
+        opts.right,
+        config_path=opts.config,
+        side_by_side=opts.side_by_side,
+    )
     VisionGUI(cam).run()
 
 

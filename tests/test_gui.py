@@ -137,3 +137,11 @@ def test_toggle_views(monkeypatch):
     gui.show_rect_var.get = lambda: False
     gui._toggle_rect()
     assert gui.rect_window is None
+
+
+def test_capture(monkeypatch):
+    cam = setup_gui(monkeypatch)
+    gui = gui_mod.VisionGUI(cam)
+    gui.calibrator.add_corners = lambda l, r: True
+    gui._capture()
+    assert len(gui.captured_pairs) == 1

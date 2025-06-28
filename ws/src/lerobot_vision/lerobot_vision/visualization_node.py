@@ -65,6 +65,9 @@ class VisualizationNode(Node):
         self.declare_parameter("publish_masks", False)
         self.declare_parameter("publish_overlay", True)
         self.declare_parameter("use_cuda", True)
+        self.declare_parameter("left_idx", 0)
+        self.declare_parameter("right_idx", 1)
+        self.declare_parameter("side_by_side", False)
         config_path = (
             self.get_parameter("camera_config")
             .get_parameter_value()
@@ -129,8 +132,29 @@ class VisualizationNode(Node):
             .integer_value
             == 1
         )
+        idx_left = (
+            self.get_parameter("left_idx")
+            .get_parameter_value()
+            .integer_value
+        )
+        idx_right = (
+            self.get_parameter("right_idx")
+            .get_parameter_value()
+            .integer_value
+        )
+        use_sbs = (
+            self.get_parameter("side_by_side")
+            .get_parameter_value()
+            .integer_value
+            == 1
+        )
         self.bridge = CvBridge()
-        self.camera = StereoCamera(config_path=config_path)
+        self.camera = StereoCamera(
+            idx_left,
+            idx_right,
+            config_path=config_path,
+            side_by_side=use_sbs,
+        )
         self.depth_engine = DepthEngine(use_cuda=p_use_cuda)
         self.yolo_engine = Yolo3DEngine(ckpt_path)
         self.pose_estimator = PoseEstimator()
