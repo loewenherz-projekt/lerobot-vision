@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 set -e
 
-source /opt/ros/humble/setup.bash
+if [ -f /opt/ros/humble/setup.bash ]; then
+    source /opt/ros/humble/setup.bash
+else
+    echo "ROS 2 Humble not found at /opt/ros/humble" >&2
+    echo "Please install ROS 2 Humble or update run.sh with the correct path." >&2
+    exit 1
+fi
 source "$HOME/miniconda3/etc/profile.d/conda.sh" 2>/dev/null || true
 conda activate lerobot-vision || true
 
