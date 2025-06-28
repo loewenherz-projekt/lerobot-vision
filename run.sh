@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 set -e
 
-if [ -f /opt/ros/humble/setup.bash ]; then
-    source /opt/ros/humble/setup.bash
+ROS_DISTRO="${ROS_DISTRO:-humble}"
+ROS_SETUP="${ROS_SETUP:-/opt/ros/${ROS_DISTRO}/setup.bash}"
+
+if [ -f "$ROS_SETUP" ]; then
+    # Source the detected ROS 2 setup file
+    source "$ROS_SETUP"
 else
-    echo "ROS 2 Humble not found at /opt/ros/humble" >&2
-    echo "Please install ROS 2 Humble or update run.sh with the correct path." >&2
+    echo "ROS 2 distribution '$ROS_DISTRO' not found at $ROS_SETUP" >&2
+    echo "Please install ROS 2 or set ROS_SETUP to the correct path." >&2
     exit 1
 fi
 source "$HOME/miniconda3/etc/profile.d/conda.sh" 2>/dev/null || true

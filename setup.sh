@@ -44,5 +44,14 @@ then
 fi
 
 # Build the workspace
-source /opt/ros/humble/setup.bash
+ROS_DISTRO="${ROS_DISTRO:-humble}"
+ROS_SETUP="${ROS_SETUP:-/opt/ros/${ROS_DISTRO}/setup.bash}"
+
+if [ -f "$ROS_SETUP" ]; then
+  source "$ROS_SETUP"
+else
+  echo "ROS 2 distribution '$ROS_DISTRO' not found at $ROS_SETUP" >&2
+  echo "Please install ROS 2 or set ROS_SETUP to the correct path." >&2
+  exit 1
+fi
 colcon build --symlink-install --workspace ws
