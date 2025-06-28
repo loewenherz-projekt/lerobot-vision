@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import yaml
 
 from lerobot_vision.object_localizer import localize_objects
 from lerobot_vision.pose_estimator import PoseEstimator
@@ -32,6 +33,16 @@ def test_stereo_calibrator_no_corners():
     calib = StereoCalibrator()
     with pytest.raises(RuntimeError):
         calib.calibrate((10, 10))
+
+
+def test_stereo_calibrator_save(tmp_path):
+    calib = StereoCalibrator()
+    path = tmp_path / "out.yaml"
+    m = np.eye(3)
+    d = np.zeros(5)
+    calib.save(str(path), m, d, m, d, np.eye(3), np.array([1.0, 0, 0]))
+    data = yaml.safe_load(path.read_text())
+    assert "rotation" in data and "translation" in data
 
 
 def test_image_rectifier_identity():

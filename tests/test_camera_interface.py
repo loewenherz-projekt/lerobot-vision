@@ -34,3 +34,23 @@ def test_get_frames_failure(monkeypatch):
     cam = StereoCamera()
     with pytest.raises(RuntimeError):
         cam.get_frames()
+
+
+def test_side_by_side(monkeypatch):
+    img = np.zeros((10, 20, 3), dtype=np.uint8)
+    img[:, :10] = 1
+    img[:, 10:] = 2
+
+    class DummyCap:
+        def read(self):
+            return True, img
+
+        def release(self):
+            pass
+
+    monkeypatch.setattr("cv2.VideoCapture", lambda idx: DummyCap())
+    cam = StereoCamera(side_by_side=True)
+    left, right = cam.get_frames()
+    assert left.shape[1] == right.shape[1] == 10
+    assert np.all(left == 1)
+    assert np.all(right == 2)

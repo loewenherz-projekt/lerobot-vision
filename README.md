@@ -54,7 +54,12 @@ Always activate the environment before running tests or `run.sh`.
 
 ### 3. Running the demo
 
-Use `./run.sh` to activate the Conda environment (if present), source ROS 2 and launch `system_launch.py` which starts the example nodes. Pass `--gui` to start the GUI alongside the pipeline. CUDA acceleration is enabled by default. Disable it with:
+Use `./run.sh` to activate the Conda environment (if present), source ROS 2 and launch `system_launch.py` which starts the example nodes. Pass `--gui` to start the GUI alongside the pipeline. Additional options allow selecting the camera indices, loading a calibration file and enabling side‑by‑side mode for single stereo devices:
+```bash
+./run.sh --gui --left 2 --right 3 --config path/to/camera.yaml --side-by-side
+```
+
+CUDA acceleration is enabled by default. Disable it with:
 
 ```bash
 ros2 launch lerobot_vision system_launch.py use_cuda:=false
@@ -68,9 +73,18 @@ For a quick preview of the camera feed and a simple calibration helper you can r
 vision_gui
 ```
 
+
 #### Using the GUI
 
 The interface offers checkboxes to toggle rectified, depth, disparity, mask and overlay windows. Screenshots and overlay recordings can be captured via the corresponding buttons. Publishers for individual image topics can be toggled at runtime through the `toggle_publisher` service. The disparity and mask views are also published via ROS on `/stereo/disparity` and `/stereo/masks`.
+
+##### Calibration wizard
+
+1. Place a chessboard in view of both cameras.
+2. Press **Capture** to record a stereo pair with detected corners.
+3. Repeat for several poses covering the full image area.
+4. Click **Review** to inspect the last detection.
+5. Once enough pairs are collected, press **Calibrate** to compute the parameters. A file `calibration.yaml` will be created and an error plot displayed.
 
 ### 4. Project structure
 
