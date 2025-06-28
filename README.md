@@ -86,6 +86,12 @@ The interface offers checkboxes to toggle rectified, depth, disparity, mask and 
 4. Click **Review** to inspect the last detection.
 5. Once enough pairs are collected, press **Calibrate** to compute the parameters. A file `calibration.yaml` will be created and an error plot displayed.
 
+Alternatively you can run the non‑GUI helper which works with side‑by‑side stereo devices. It captures chessboard images until you press ``q`` and saves the result:
+
+```bash
+python -m lerobot_vision.calibrate_cli --device 0 --output calibration.yaml
+```
+
 ### 4. Project structure
 
 ```

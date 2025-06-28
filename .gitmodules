@@ -8,6 +8,9 @@
 	path = external/lerobot
 	url = https://github.com/huggingface/lerobot.git
 [submodule "external/isaac_ros_pose_estimation"]
-	path = external/isaac_ros_pose_estimation
-	url = https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_pose_estimation.git
-	branch = release-3.2
+        path = external/isaac_ros_pose_estimation
+        url = https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_pose_estimation.git
+        branch = release-3.2
+[submodule "external/OpenYOLO3D/models/Mask3D/third_party/MinkowskiEngine"]
+       path = external/OpenYOLO3D/models/Mask3D/third_party/MinkowskiEngine
+       url = https://github.com/NVIDIA/MinkowskiEngine.git
