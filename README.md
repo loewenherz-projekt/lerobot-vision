@@ -33,7 +33,7 @@ pretrained DOPE and YOLO3D checkpoints required by the demo.
 
 Verify that every `external/*` directory contains files. `setup.sh` will exit if any of them are empty.
 
-Run `./setup.sh` once to install system requirements and build the workspace. This script assumes an Ubuntu system with ROS 2 Humble available via apt.
+Run `./setup.sh` once to install system requirements and build the workspace. This script assumes an Ubuntu system with ROS 2 Humble available via apt. If your ROS 2 installation lives elsewhere, set the `ROS_SETUP` environment variable to the appropriate `setup.bash` before running the script.
 ### 2. Create the Conda environment
 
 Create and activate the `lerobot-vision` Conda environment:
@@ -58,6 +58,7 @@ Use `./run.sh` to activate the Conda environment (if present), source ROS 2 and
 ```bash
 ./run.sh --gui --left 2 --right 3 --config path/to/camera.yaml --side-by-side
 ```
+If ROS lives in a non‑standard location, set `ROS_SETUP` (or `ROS_DISTRO`) before running the script so it can locate the correct `setup.bash`.
 
 CUDA acceleration is enabled by default. Disable it with:
 
