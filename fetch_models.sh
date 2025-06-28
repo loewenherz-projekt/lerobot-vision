@@ -10,7 +10,10 @@ fetch() {
     out="$2"
     if [ ! -f "$out" ]; then
         echo "Downloading $out..."
-        curl -L -o "$out" "$url"
+        if ! curl -L -f -o "$out" "$url"; then
+            echo "Failed to download $url"
+            exit 1
+        fi
     fi
 }
 
@@ -20,6 +23,10 @@ fetch "https://github.com/ericwonghaha/OpenYOLO3D/releases/download/v1.0/yolo3d.
 for archive in *.tgz; do
     dir="${archive%.tgz}"
     if [ ! -d "$dir" ]; then
-        tar -xzf "$archive"
+        echo "Extracting $archive..."
+        if ! tar -xzf "$archive"; then
+            echo "Error extracting $archive"
+            exit 1
+        fi
     fi
 done

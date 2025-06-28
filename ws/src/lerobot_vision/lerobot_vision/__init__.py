@@ -8,6 +8,7 @@ from .pose_estimator import PoseEstimator
 from .object_localizer import localize_objects
 from .fusion import FusionModule
 from .stereo_calibrator import StereoCalibrator
+from .calibrate_cli import main as calibrate_cli
 
 __all__ = [
     "StereoCamera",
@@ -18,4 +19,5 @@ __all__ = [
     "localize_objects",
     "FusionModule",
     "StereoCalibrator",
+    "calibrate_cli",
 ]
