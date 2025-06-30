@@ -11,3 +11,6 @@
         path = external/isaac_ros_pose_estimation
         url = https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_pose_estimation.git
         branch = release-3.2
+[submodule "external/SuperPointSLAM3"]
+	path = external/SuperPointSLAM3
+	url = https://github.com/shahram95/SuperPointSLAM3.git
