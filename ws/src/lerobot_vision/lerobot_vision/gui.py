@@ -59,8 +59,10 @@ class VisionGUI:  # pragma: no cover - GUI helper
         # Optional views
         self.show_rect_var = tk.BooleanVar(value=False)
         self.show_depth_var = tk.BooleanVar(value=False)
+        self.show_yolo_var = tk.BooleanVar(value=False)
         self.show_overlay_var = tk.BooleanVar(value=False)
         self.show_mask_var = tk.BooleanVar(value=False)
+        self.show_dope_var = tk.BooleanVar(value=False)
         self.show_disp_var = tk.BooleanVar(value=False)
 
         self.record_var = tk.BooleanVar(value=False)
@@ -93,6 +95,18 @@ class VisionGUI:  # pragma: no cover - GUI helper
         ).pack(side=tk.LEFT)
         tk.Checkbutton(
             self.root,
+            text="YOLO",
+            variable=self.show_yolo_var,
+            command=self._toggle_yolo,
+        ).pack(side=tk.LEFT)
+        tk.Checkbutton(
+            self.root,
+            text="DOPE",
+            variable=self.show_dope_var,
+            command=self._toggle_dope,
+        ).pack(side=tk.LEFT)
+        tk.Checkbutton(
+            self.root,
             text="Overlay",
             variable=self.show_overlay_var,
             command=self._toggle_overlay,
@@ -112,6 +126,8 @@ class VisionGUI:  # pragma: no cover - GUI helper
         self.rect_window: tk.Toplevel | None = None
         self.depth_window: tk.Toplevel | None = None
         self.overlay_window: tk.Toplevel | None = None
+        self.yolo_window: tk.Toplevel | None = None
+        self.dope_window: tk.Toplevel | None = None
         self.mask_window: tk.Toplevel | None = None
         self.disp_window: tk.Toplevel | None = None
 
@@ -119,6 +135,8 @@ class VisionGUI:  # pragma: no cover - GUI helper
         self.rect_right_label: tk.Label | None = None
         self.depth_label: tk.Label | None = None
         self.overlay_label: tk.Label | None = None
+        self.yolo_label: tk.Label | None = None
+        self.dope_label: tk.Label | None = None
         self.mask_label: tk.Label | None = None
         self.disp_label: tk.Label | None = None
 
@@ -154,6 +172,8 @@ class VisionGUI:  # pragma: no cover - GUI helper
             except Exception:
                 continue
             overlay = None
+            yimg = None
+            dimg = None
             self._show_image(left, self.left_label)
             self._show_image(right, self.right_label)
 
@@ -161,6 +181,8 @@ class VisionGUI:  # pragma: no cover - GUI helper
                 self.show_rect_var.get()
                 or self.show_depth_var.get()
                 or self.show_overlay_var.get()
+                or self.show_yolo_var.get()
+                or self.show_dope_var.get()
                 or self.show_mask_var.get()
                 or self.show_disp_var.get()
             )
@@ -216,8 +238,14 @@ class VisionGUI:  # pragma: no cover - GUI helper
 
             masks = None
             labels = None
+            poses = None
             if (
-                (self.show_overlay_var.get() or self.show_mask_var.get())
+                (
+                    self.show_overlay_var.get()
+                    or self.show_mask_var.get()
+                    or self.show_yolo_var.get()
+                    or self.show_dope_var.get()
+                )
                 and depth is not None
                 and self.yolo_engine
             ):
@@ -228,8 +256,7 @@ class VisionGUI:  # pragma: no cover - GUI helper
                     labels = None
 
             if (
-                self.show_overlay_var.get()
-                and self.overlay_window
+                (self.show_overlay_var.get() or self.show_dope_var.get())
                 and depth is not None
                 and masks is not None
                 and labels is not None
@@ -240,12 +267,37 @@ class VisionGUI:  # pragma: no cover - GUI helper
                     _ = localize_objects(
                         masks, depth, self.camera.camera_matrix, labels, poses
                     )
-                    overlay = self._draw_overlay(
-                        left_r.copy(), masks, labels, depth, poses
-                    )
-                    self._show_image(overlay, self.overlay_label)
+                    if self.show_overlay_var.get() and self.overlay_window:
+                        overlay = self._draw_overlay(
+                            left_r.copy(), masks, labels, depth, poses
+                        )
+                        self._show_image(overlay, self.overlay_label)
                 except Exception:
                     pass
+
+            if (
+                self.show_yolo_var.get()
+                and self.yolo_window
+                and depth is not None
+                and masks is not None
+                and labels is not None
+            ):
+                yimg = self._draw_yolo_overlay(
+                    left_r.copy(), masks, labels, depth
+                )
+                self._show_image(yimg, self.yolo_label)
+
+            if (
+                self.show_dope_var.get()
+                and self.dope_window
+                and poses is not None
+                and masks is not None
+                and labels is not None
+            ):
+                dimg = self._draw_overlay(
+                    left_r.copy(), masks, labels, depth, poses
+                )
+                self._show_image(dimg, self.dope_label)
 
             if (
                 self.show_mask_var.get()
@@ -276,9 +328,14 @@ class VisionGUI:  # pragma: no cover - GUI helper
                     dnorm.astype(np.uint8), cv2.COLORMAP_INFERNO
                 )
                 self._show_image(dcol, self.disp_label)
-            self._last_frame = (
-                overlay if "overlay" in locals() and overlay is not None else left_r
-            )
+            if "overlay" in locals() and overlay is not None:
+                self._last_frame = overlay
+            elif "dimg" in locals() and dimg is not None:
+                self._last_frame = dimg
+            elif "yimg" in locals() and yimg is not None:
+                self._last_frame = yimg
+            else:
+                self._last_frame = left_r
             if self.video_writer is not None and self._last_frame is not None:
                 self.video_writer.write(self._last_frame)
             self.root.update_idletasks()
@@ -393,6 +450,24 @@ class VisionGUI:  # pragma: no cover - GUI helper
             self.disp_window.destroy()
             self.disp_window = None
 
+    def _toggle_yolo(self) -> None:  # pragma: no cover - runtime GUI
+        if self.show_yolo_var.get():
+            self.yolo_window = tk.Toplevel(self.root)
+            self.yolo_label = tk.Label(self.yolo_window)
+            self.yolo_label.pack()
+        elif self.yolo_window is not None:
+            self.yolo_window.destroy()
+            self.yolo_window = None
+
+    def _toggle_dope(self) -> None:  # pragma: no cover - runtime GUI
+        if self.show_dope_var.get():
+            self.dope_window = tk.Toplevel(self.root)
+            self.dope_label = tk.Label(self.dope_window)
+            self.dope_label.pack()
+        elif self.dope_window is not None:
+            self.dope_window.destroy()
+            self.dope_window = None
+
     def _toggle_record(self) -> None:  # pragma: no cover - runtime GUI
         if self.record_var.get():
             fourcc = cv2.VideoWriter_fourcc(*"XVID")
@@ -487,6 +562,51 @@ class VisionGUI:  # pragma: no cover - GUI helper
                 ):
                     pt2 = _project(center + axis)
                     cv2.line(image, (int(u), int(v)), pt2, color, 2)
+        return image
+
+    def _draw_yolo_overlay(
+        self,
+        image: np.ndarray,
+        masks: list[np.ndarray],
+        labels: list[str],
+        depth: np.ndarray,
+    ) -> np.ndarray:  # pragma: no cover - runtime drawing
+        fx = self.camera.camera_matrix[0, 0]
+        fy = self.camera.camera_matrix[1, 1]
+        cx = self.camera.camera_matrix[0, 2]
+        cy = self.camera.camera_matrix[1, 2]
+
+        for mask, label in zip(masks, labels):
+            ys, xs = np.nonzero(mask > 0)
+            if len(xs) == 0:
+                continue
+            x0, x1 = xs.min(), xs.max()
+            y0, y1 = ys.min(), ys.max()
+            u = float(np.median(xs))
+            v = float(np.median(ys))
+            z = float(np.median(depth[ys, xs]))
+            x = (u - cx) * z / fx
+            y = (v - cy) * z / fy
+            cv2.rectangle(image, (x0, y0), (x1, y1), (0, 255, 0), 2)
+            cv2.putText(
+                image,
+                label,
+                (int(x0), int(y0) - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 255, 0),
+                1,
+            )
+            info = f"{z:.2f}m {x:+.2f},{y:+.2f}"
+            cv2.putText(
+                image,
+                info,
+                (int(x0), int(y1) + 15),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 255, 0),
+                1,
+            )
         return image
 
     def _update_status(self) -> None:  # pragma: no cover

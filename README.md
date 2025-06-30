@@ -84,7 +84,7 @@ vision_gui
 
 #### Using the GUI
 
-The interface offers checkboxes to toggle rectified, depth, disparity, mask and overlay windows. Screenshots and overlay recordings can be captured via the corresponding buttons. Publishers for individual image topics can be toggled at runtime through the `toggle_publisher` service. The disparity and mask views are also published via ROS on `/stereo/disparity` and `/stereo/masks`.
+The interface offers checkboxes to toggle rectified, depth, disparity, mask, YOLO and DOPE windows in addition to the final overlay. Screenshots and overlay recordings can be captured via the corresponding buttons. Publishers for individual image topics can be toggled at runtime through the `toggle_publisher` service. The disparity and mask views are also published via ROS on `/stereo/disparity` and `/stereo/masks`.
 
 ##### Calibration wizard
 
@@ -158,6 +158,8 @@ To visualize the 3D output in RViz2, launch the provided configuration:
 ```bash
 ros2 launch lerobot_vision view_detections.launch.py
 ```
+
+SuperPoint‑SLAM3 publishes the map on `/slam/map` and the current pose on `/slam/pose`. These topics can be visualized in RViz2 as well, e.g. by adding a `PointCloud2` and `Pose` display.
 
 The visualization node publishes the raw and rectified camera frames as well as
 the computed depth map. These outputs can be enabled individually via the
