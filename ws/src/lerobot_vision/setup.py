@@ -13,7 +13,14 @@ setup(
             [f"resources/{package_name}"],
         ),
         (f"share/{package_name}", ["package.xml"]),
-        (f"share/{package_name}/launch", ["launch/system_launch.py", "launch/view_detections.launch.py"]),
+        (
+            f"share/{package_name}/launch",
+            [
+                "launch/system_launch.py",
+                "launch/slam_system.launch.py",
+                "launch/view_detections.launch.py",
+            ],
+        ),
         (f"share/{package_name}/config", ["config/camera.yaml"]),
         (f"share/{package_name}/rviz", ["rviz/view_detections.rviz"]),
     ],
@@ -31,6 +38,7 @@ setup(
             "planner_node=lerobot_vision.planner_node:main",
             "control_node=lerobot_vision.control_node:main",
             "vision_gui=lerobot_vision.gui:main",
+            "slam_node=lerobot_vision.slam_node:main",
         ],
     },
 )

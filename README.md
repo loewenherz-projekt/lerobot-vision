@@ -7,6 +7,7 @@ lightweight wrapper around NVIDIA DOPE for pose estimation. Heavy weight
 dependencies (YOLO3D, StereoAnywhere, MoveIt etc.) are provided as Git
 submodules under `external/`.
 
+
 Before building the workspace you must fetch these submodules:
 `git submodule update --init --recursive`.
 
@@ -64,6 +65,12 @@ CUDA acceleration is enabled by default. Disable it with:
 
 ```bash
 ros2 launch lerobot_vision system_launch.py use_cuda:=false
+```
+
+Launch the complete setup including SLAM with:
+
+```bash
+ros2 launch lerobot_vision slam_system.launch.py
 ```
 
 Set the `OPENAI_API_KEY` environment variable to enable the NLP node.
