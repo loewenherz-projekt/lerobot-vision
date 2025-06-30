@@ -9,6 +9,7 @@ from .object_localizer import localize_objects
 from .fusion import FusionModule
 from .stereo_calibrator import StereoCalibrator
 from .calibrate_cli import main as calibrate_cli
+from .slam_node import SlamNode
 
 __all__ = [
     "StereoCamera",
@@ -20,4 +21,5 @@ __all__ = [
     "FusionModule",
     "StereoCalibrator",
     "calibrate_cli",
+    "SlamNode",
 ]
