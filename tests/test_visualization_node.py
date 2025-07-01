@@ -40,6 +40,7 @@ def test_on_timer(monkeypatch):
         np.zeros(5),
         raising=False,
     )
+
     def compute_depth(*args, **kwargs):
         if kwargs.get("return_disparity"):
             depth = np.zeros((1, 1), dtype=np.float32)
@@ -48,7 +49,11 @@ def test_on_timer(monkeypatch):
 
     monkeypatch.setattr(
         "lerobot_vision.visualization_node.DepthEngine",
-        mock.Mock(return_value=mock.Mock(compute_depth=mock.Mock(side_effect=compute_depth))),
+        mock.Mock(
+            return_value=mock.Mock(
+                compute_depth=mock.Mock(side_effect=compute_depth)
+            )
+        ),
     )
     monkeypatch.setattr(
         "lerobot_vision.visualization_node.Yolo3DEngine",
@@ -208,6 +213,7 @@ def test_toggle_service(monkeypatch):
         np.zeros(5),
         raising=False,
     )
+
     def compute_depth(*args, **kwargs):
         if kwargs.get("return_disparity"):
             depth = np.zeros((1, 1), dtype=np.float32)
@@ -216,7 +222,11 @@ def test_toggle_service(monkeypatch):
 
     monkeypatch.setattr(
         "lerobot_vision.visualization_node.DepthEngine",
-        mock.Mock(return_value=mock.Mock(compute_depth=mock.Mock(side_effect=compute_depth))),
+        mock.Mock(
+            return_value=mock.Mock(
+                compute_depth=mock.Mock(side_effect=compute_depth)
+            )
+        ),
     )
     monkeypatch.setattr(
         "lerobot_vision.visualization_node.Yolo3DEngine",
@@ -248,7 +258,12 @@ def test_toggle_service(monkeypatch):
         "lerobot_vision.visualization_node.ImageRectifier",
         mock.Mock(
             return_value=mock.Mock(
-                rectify=mock.Mock(side_effect=lambda l, r: (l, r))
+                rectify=mock.Mock(
+                    side_effect=lambda left_frame, right_frame: (
+                        left_frame,
+                        right_frame,
+                    )
+                )
             )
         ),
     )
@@ -273,8 +288,8 @@ def test_toggle_service(monkeypatch):
     old_pub.publish.assert_called_once()
 
     req = TogglePublisher.Request(publisher="overlay", enable=False)
-    # The original test code uses `.call()`. This is kept as is, assuming a custom test setup.
-    # In a real scenario, one would typically call the service callback directly.
+    # `.call()` is used here because the real service setup is mocked.
+    # In a normal environment, you would invoke the callback directly.
     node.toggle_srv.call(req)
     node._on_timer()
     old_pub.publish.assert_called_once()

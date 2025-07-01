@@ -216,7 +216,9 @@ class VisionGUI:  # pragma: no cover - GUI helper
                             left_r, right_r, return_disparity=True
                         )
                     else:
-                        depth = self.depth_engine.compute_depth(left_r, right_r)
+                        depth = self.depth_engine.compute_depth(
+                            left_r, right_r
+                        )
                         disp = None
                 except Exception:
                     depth = np.zeros_like(left_r[:, :, 0], dtype=float)

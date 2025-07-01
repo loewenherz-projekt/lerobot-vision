@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Simple command line utility to calibrate a side-by-side stereo camera."""  # pragma: no cover
+"""Simple CLI to calibrate a side-by-side stereo camera."""  # pragma: no cover
 
 from __future__ import annotations
 
@@ -15,24 +15,41 @@ from .stereo_calibrator import StereoCalibrator
 def main(args: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Guided stereo calibration")
     parser.add_argument(
-        "--device", type=int, default=0, help="Side-by-side camera device index"
+        "--device",
+        type=int,
+        default=0,
+        help="Side-by-side camera device index",
     )
     parser.add_argument(
-        "--board-width", type=int, default=7, help="Number of inner corners per chessboard row"
+        "--board-width",
+        type=int,
+        default=7,
+        help="Number of inner corners per chessboard row",
     )
     parser.add_argument(
-        "--board-height", type=int, default=6, help="Number of inner corners per chessboard column"
+        "--board-height",
+        type=int,
+        default=6,
+        help="Number of inner corners per chessboard column",
     )
     parser.add_argument(
-        "--square-size", type=float, default=1.0, help="Chessboard square size in your preferred units"
+        "--square-size",
+        type=float,
+        default=1.0,
+        help="Chessboard square size in your preferred units",
     )
     parser.add_argument(
-        "--output", default="calibration.yaml", help="Destination for calibration file"
+        "--output",
+        default="calibration.yaml",
+        help="Destination for calibration file",
     )
     opts = parser.parse_args(args)
+    output_path = Path(opts.output)
 
     cam = StereoCamera(left_idx=opts.device, side_by_side=True)
-    calib = StereoCalibrator((opts.board_width, opts.board_height), opts.square_size)
+    calib = StereoCalibrator(
+        (opts.board_width, opts.board_height), opts.square_size
+    )
 
     print("\nPress SPACE to capture a pair, Q to finish.\n")
     count = 0
@@ -58,9 +75,11 @@ def main(args: list[str] | None = None) -> None:
         print("No pairs captured. Exiting.")
         return
 
-    m1, d1, m2, d2, r, t, _ = calib.calibrate(left.shape[:2][::-1], return_errors=True)
-    calib.save(opts.output, m1, d1, m2, d2, r, t)
-    print(f"Calibration saved to {opts.output}")
+    m1, d1, m2, d2, r, t, _ = calib.calibrate(
+        left.shape[:2][::-1], return_errors=True
+    )
+    calib.save(str(output_path), m1, d1, m2, d2, r, t)
+    print(f"Calibration saved to {output_path}")
 
 
 if __name__ == "__main__":  # pragma: no cover - manual execution

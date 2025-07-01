@@ -60,7 +60,9 @@ class PlannerNode(Node):
         actions = json.loads(actions_json)
         target_pose = actions.get("target_pose")
         try:
-            plan = self.group.plan(target_pose)  # pragma: no cover - integration
+            plan = self.group.plan(
+                target_pose
+            )  # pragma: no cover - integration
             if isinstance(plan, tuple):  # pragma: no cover - integration
                 plan = plan[1]
             if not isinstance(plan, JointTrajectory):

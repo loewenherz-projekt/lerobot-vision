@@ -79,9 +79,8 @@ class DepthEngine:
             tuple ``(depth, disparity)`` is returned. ``disparity`` will be
             ``None`` when disparity computation is unavailable.
         """
-        if (
-            not isinstance(left, np.ndarray)
-            or not isinstance(right, np.ndarray)
+        if not isinstance(left, np.ndarray) or not isinstance(
+            right, np.ndarray
         ):
             logging.error("Invalid input to compute_depth")
             raise ValueError("Invalid input")

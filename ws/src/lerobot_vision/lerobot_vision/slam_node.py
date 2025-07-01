@@ -34,7 +34,9 @@ class SlamNode(Node):
         self.declare_parameter("side_by_side", False)
         self.declare_parameter("map_output", "")
         cfg = (
-            self.get_parameter("camera_config").get_parameter_value().string_value
+            self.get_parameter("camera_config")
+            .get_parameter_value()
+            .string_value
         )
         idx_left = (
             self.get_parameter("left_idx").get_parameter_value().integer_value
