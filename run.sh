@@ -15,6 +15,14 @@ fi
 source "$HOME/miniconda3/etc/profile.d/conda.sh" 2>/dev/null || true
 conda activate lerobot-vision || true
 
+# Also source the workspace if available
+WS_SETUP="$(dirname "$0")/ws/install/setup.bash"
+if [ -f "$WS_SETUP" ]; then
+    source "$WS_SETUP"
+else
+    echo "Warning: workspace not built. Run ./setup.sh first." >&2
+fi
+
 # Launch the system and optionally the GUI
 GUI=false
 LEFT=0
