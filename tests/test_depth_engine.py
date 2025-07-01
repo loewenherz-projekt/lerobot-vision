@@ -42,6 +42,7 @@ def test_cuda_fallback(monkeypatch):
     wls = mock.Mock(filter=mock.Mock(return_value=disp))
     import types
     import lerobot_vision.depth_engine as de
+
     dummy_cv2 = types.SimpleNamespace(cuda=types.SimpleNamespace())
     monkeypatch.setattr(de, "cv2", dummy_cv2)
     monkeypatch.setattr(

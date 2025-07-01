@@ -65,7 +65,14 @@ def setup_gui(monkeypatch):
     monkeypatch.setattr(
         gui_mod,
         "ImageRectifier",
-        mock.Mock(return_value=mock.Mock(rectify=lambda l, r: (l, r))),
+        mock.Mock(
+            return_value=mock.Mock(
+                rectify=lambda left_frame, right_frame: (
+                    left_frame,
+                    right_frame,
+                )
+            )
+        ),
     )
     monkeypatch.setattr(
         gui_mod,
@@ -142,6 +149,6 @@ def test_toggle_views(monkeypatch):
 def test_capture(monkeypatch):
     cam = setup_gui(monkeypatch)
     gui = gui_mod.VisionGUI(cam)
-    gui.calibrator.add_corners = lambda l, r: True
+    gui.calibrator.add_corners = lambda left_frame, right_frame: True
     gui._capture()
     assert len(gui.captured_pairs) == 1

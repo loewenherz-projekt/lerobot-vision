@@ -10,12 +10,20 @@ class DummyCam:
         pass
 
     def get_frames(self):
-        return np.zeros((1, 1, 3), dtype=np.uint8), np.zeros((1, 1, 3), dtype=np.uint8)
+        left = np.zeros((1, 1, 3), dtype=np.uint8)
+        right = np.zeros((1, 1, 3), dtype=np.uint8)
+        return left, right
 
 
 def test_slam_node(monkeypatch, tmp_path):
-    slam_inst = mock.Mock(track=mock.Mock(return_value=[0, 0, 0]), get_map=mock.Mock(return_value=b"map"))
-    monkeypatch.setattr("lerobot_vision.slam_node.SLAMSystem", mock.Mock(return_value=slam_inst))
+    slam_inst = mock.Mock(
+        track=mock.Mock(return_value=[0, 0, 0]),
+        get_map=mock.Mock(return_value=b"map"),
+    )
+    monkeypatch.setattr(
+        "lerobot_vision.slam_node.SLAMSystem",
+        mock.Mock(return_value=slam_inst),
+    )
     monkeypatch.setattr("lerobot_vision.slam_node.StereoCamera", DummyCam)
     rclpy.init(args=None)
     node = SlamNode()

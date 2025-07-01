@@ -127,20 +127,14 @@ class VisualizationNode(Node):
             == 1
         )
         p_use_cuda = (
-            self.get_parameter("use_cuda")
-            .get_parameter_value()
-            .integer_value
+            self.get_parameter("use_cuda").get_parameter_value().integer_value
             == 1
         )
         idx_left = (
-            self.get_parameter("left_idx")
-            .get_parameter_value()
-            .integer_value
+            self.get_parameter("left_idx").get_parameter_value().integer_value
         )
         idx_right = (
-            self.get_parameter("right_idx")
-            .get_parameter_value()
-            .integer_value
+            self.get_parameter("right_idx").get_parameter_value().integer_value
         )
         use_sbs = (
             self.get_parameter("side_by_side")

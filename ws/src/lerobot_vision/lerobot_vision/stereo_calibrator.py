@@ -24,7 +24,9 @@ class StereoCalibrator:
         self.left_points: List[np.ndarray] = []
         self.right_points: List[np.ndarray] = []
 
-    def add_corners(self, left: np.ndarray, right: np.ndarray) -> bool:  # pragma: no cover - heavy calibration
+    def add_corners(
+        self, left: np.ndarray, right: np.ndarray
+    ) -> bool:  # pragma: no cover - heavy calibration
         """Detect chessboard corners and store them."""
         pattern_size = self.board_size
         ret_l, corners_l = cv2.findChessboardCorners(left, pattern_size)
@@ -100,17 +102,15 @@ class StereoCalibrator:
                 proj_l, _ = cv2.projectPoints(
                     objp, rvecs_l[i], tvecs_l[i], m1, d1
                 )
-                err_l = (
-                    cv2.norm(self.left_points[i], proj_l, cv2.NORM_L2)
-                    / len(proj_l)
-                )
+                err_l = cv2.norm(
+                    self.left_points[i], proj_l, cv2.NORM_L2
+                ) / len(proj_l)
                 proj_r, _ = cv2.projectPoints(
                     objp, rvecs_r[i], tvecs_r[i], m2, d2
                 )
-                err_r = (
-                    cv2.norm(self.right_points[i], proj_r, cv2.NORM_L2)
-                    / len(proj_r)
-                )
+                err_r = cv2.norm(
+                    self.right_points[i], proj_r, cv2.NORM_L2
+                ) / len(proj_r)
                 errors.append((float(err_l), float(err_r)))
 
         return m1, d1, m2, d2, r, t, errors

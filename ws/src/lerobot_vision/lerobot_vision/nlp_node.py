@@ -31,8 +31,11 @@ class NlpNode(Node):
 
     def _cb(self, msg: String) -> None:
         try:  # pragma: no cover - integration
-            actions = self._call_llm(msg.data)  # pragma: no cover - integration
-            self.pub.publish(String(data=json.dumps(actions)))  # pragma: no cover
+            actions = self._call_llm(
+                msg.data
+            )  # pragma: no cover - integration
+            result = String(data=json.dumps(actions))  # pragma: no cover
+            self.pub.publish(result)  # pragma: no cover
         except Exception as exc:  # pragma: no cover
             logging.error("LLM call failed: %s", exc)
 
