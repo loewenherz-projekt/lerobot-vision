@@ -29,8 +29,11 @@ Before running the setup script make sure the submodules are present:
 git submodule update --init --recursive
 ```
 
-After fetching the submodules run `./fetch_models.sh` to download the
-pretrained DOPE and YOLO3D checkpoints required by the demo.
+After fetching the submodules download the pretrained DOPE and YOLO3D
+checkpoints manually. The DOPE weights can be obtained from the
+[Google Drive folder](https://drive.google.com/drive/folders/1DfoA3m_Bm0fW8tOWXGVxi4ETlLEAgmcg).
+Place the archives `dope.tgz` and `yolo3d.tgz` in `external/checkpoints/` and
+then run `./fetch_models.sh` to extract them.
 
 Verify that every `external/*` directory contains files. `setup.sh` will exit if any of them are empty.
 
@@ -55,7 +58,7 @@ Always activate the environment before running tests or `run.sh`.
 
 ### 3. Running the demo
 
-Use `./run.sh` to activate the Conda environment (if present), source ROS 2 and launch `system_launch.py` which starts the example nodes. Pass `--gui` to start the GUI alongside the pipeline. Additional options allow selecting the camera indices, loading a calibration file and enabling side‑by‑side mode for single stereo devices:
+Use `./run.sh` to activate the Conda environment (if present), source ROS 2 and the workspace, then launch `system_launch.py` which starts the example nodes. Pass `--gui` to start the GUI alongside the pipeline. Additional options allow selecting the camera indices, loading a calibration file and enabling side‑by‑side mode for single stereo devices:
 ```bash
 ./run.sh --gui --left 2 --right 3 --config path/to/camera.yaml --side-by-side
 ```
