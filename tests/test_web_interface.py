@@ -109,7 +109,15 @@ def test_calibration_flow(monkeypatch):
             return True
 
         def calibrate(self, size):
-            return np.eye(3), np.zeros(5), np.eye(3), np.zeros(5), np.eye(3), np.zeros(3), None
+            return (
+                np.eye(3),
+                np.zeros(5),
+                np.eye(3),
+                np.zeros(5),
+                np.eye(3),
+                np.zeros(3),
+                None,
+            )
 
     monkeypatch.setattr(web, "AsyncStereoCamera", DummyCam)
     monkeypatch.setattr(web, "StereoCalibrator", DummyCal)
@@ -128,9 +136,10 @@ def test_calibration_flow(monkeypatch):
 def test_camera_modes(monkeypatch):
     class DummyCap:
         def __init__(self, *_):
-            self.width = 640
-            self.height = 480
-            self.fps = 30
+            self.width = 0
+            self.height = 0
+            self.fps = 0
+            self.fourcc = 0
 
         def isOpened(self):
             return True
@@ -138,16 +147,19 @@ def test_camera_modes(monkeypatch):
         def set(self, prop, val):
             if prop == web.cv2.CAP_PROP_FRAME_WIDTH:
                 self.width = val
-            if prop == web.cv2.CAP_PROP_FRAME_HEIGHT:
+            elif prop == web.cv2.CAP_PROP_FRAME_HEIGHT:
                 self.height = val
-            if prop == web.cv2.CAP_PROP_FPS:
+            elif prop == web.cv2.CAP_PROP_FPS:
                 self.fps = val
+            elif prop == web.cv2.CAP_PROP_FOURCC:
+                self.fourcc = val
 
         def get(self, prop):
             mapping = {
                 web.cv2.CAP_PROP_FRAME_WIDTH: self.width,
                 web.cv2.CAP_PROP_FRAME_HEIGHT: self.height,
                 web.cv2.CAP_PROP_FPS: self.fps,
+                web.cv2.CAP_PROP_FOURCC: self.fourcc,
             }
             return mapping[prop]
 
@@ -158,8 +170,27 @@ def test_camera_modes(monkeypatch):
     client = TestClient(web.app)
     resp = client.get("/camera_modes")
     assert resp.status_code == 200
-    data = resp.json()
-    assert "modes" in data
+    modes = resp.json()["modes"]
+    assert len(modes) > 0
+    assert all("codec" in m for m in modes)
+    combos = {(m["width"], m["height"], m["fps"], m["codec"]) for m in modes}
+    assert len(combos) > 1
+
+
+def test_camera_settings_sets_codec(monkeypatch):
+    class DummyCam:
+        def __init__(self):
+            self.args = None
+
+        def set_properties(self, w, h, fps, codec):
+            self.args = codec
+
+    dummy = DummyCam()
+    monkeypatch.setattr(web.manager, "camera", dummy)
+    client = TestClient(web.app)
+    resp = client.post("/camera_settings", params={"codec": "MJPG"})
+    assert resp.status_code == 200
+    assert dummy.args == "MJPG"
 
 
 def test_models(monkeypatch, tmp_path):

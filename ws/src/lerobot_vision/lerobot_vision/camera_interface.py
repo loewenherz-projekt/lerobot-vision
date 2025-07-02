@@ -44,6 +44,7 @@ class StereoCamera:
         width: int | None = None,
         height: int | None = None,
         fps: int | None = None,
+        codec: str | None = None,
     ) -> None:
         """Set basic capture properties on both cameras."""
         if width is not None:
@@ -58,6 +59,11 @@ class StereoCamera:
             self.left_cap.set(cv2.CAP_PROP_FPS, fps)
             if self.right_cap is not None:
                 self.right_cap.set(cv2.CAP_PROP_FPS, fps)
+        if codec is not None:
+            fourcc = cv2.VideoWriter_fourcc(*codec)
+            self.left_cap.set(cv2.CAP_PROP_FOURCC, fourcc)
+            if self.right_cap is not None:
+                self.right_cap.set(cv2.CAP_PROP_FOURCC, fourcc)
 
     def get_properties(self) -> dict[str, int]:
         """Return capture properties of the left camera."""
