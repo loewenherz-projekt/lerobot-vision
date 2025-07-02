@@ -29,11 +29,10 @@ Before running the setup script make sure the submodules are present:
 git submodule update --init --recursive
 ```
 
-After fetching the submodules download the pretrained DOPE and YOLO3D
-checkpoints manually. The DOPE weights can be obtained from the
-[Google Drive folder](https://drive.google.com/drive/folders/1DfoA3m_Bm0fW8tOWXGVxi4ETlLEAgmcg).
-Place the archives `dope.tgz` and `yolo3d.tgz` in `external/checkpoints/` and
-then run `./fetch_models.sh` to extract them.
+Run `./fetch_models.sh` once to download the pretrained DOPE and YOLO3D
+checkpoints automatically. The script retrieves both the YCB and HOPE
+models for DOPE from Google Drive and the YOLO3D checkpoints from the
+OpenYOLO3D release.
 
 Verify that every `external/*` directory contains files. `setup.sh` will exit if any of them are empty.
 
