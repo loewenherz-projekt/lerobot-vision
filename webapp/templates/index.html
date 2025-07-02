@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LeRobot Web</title>
+</head>
+<body>
+<h1>LeRobot Web Interface</h1>
+<form action="/start" method="post">
+    Left camera: <input type="number" name="left" value="0">
+    Right camera: <input type="number" name="right" value="1">
+    Side by side: <input type="checkbox" name="side_by_side">
+    <button type="submit">Start</button>
+</form>
+<img src="/stream/left" width="320">
+<img src="/stream/right" width="320">
+</body>
+</html>
