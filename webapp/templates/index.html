@@ -1,7 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LeRobot Web</title>
+    <style>
+        body { font-family: sans-serif; margin: 0.5rem; }
+        .controls { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+        img.preview { max-width: 100%; height: auto; }
+        @media (max-width: 600px) { .controls { flex-direction: column; } }
+    </style>
     <script>
         async function loadModels() {
             const resp = await fetch('/models');
@@ -44,6 +51,52 @@
             document.getElementById('test_output').src = URL.createObjectURL(blob);
         }
 
+        let wsRect = null, wsDepth = null, wsMask = null, wsOverlay = null;
+
+        function toggleRect() {
+            const cb = document.getElementById('rect_chk');
+            const img = document.getElementById('rect_img');
+            if (cb.checked) {
+                wsRect = new WebSocket(`ws://${location.host}/ws/rectified/left`);
+                wsRect.onmessage = ev => {
+                    img.src = URL.createObjectURL(new Blob([ev.data]));
+                };
+            } else if (wsRect) { wsRect.close(); wsRect = null; img.src = ''; }
+        }
+
+        function toggleDepth() {
+            const cb = document.getElementById('depth_chk');
+            const img = document.getElementById('depth_img');
+            if (cb.checked) {
+                wsDepth = new WebSocket(`ws://${location.host}/ws/depth`);
+                wsDepth.onmessage = ev => {
+                    img.src = URL.createObjectURL(new Blob([ev.data]));
+                };
+            } else if (wsDepth) { wsDepth.close(); wsDepth = null; img.src = ''; }
+        }
+
+        function toggleMasks() {
+            const cb = document.getElementById('mask_chk');
+            const img = document.getElementById('mask_img');
+            if (cb.checked) {
+                wsMask = new WebSocket(`ws://${location.host}/ws/masks`);
+                wsMask.onmessage = ev => {
+                    img.src = URL.createObjectURL(new Blob([ev.data]));
+                };
+            } else if (wsMask) { wsMask.close(); wsMask = null; img.src = ''; }
+        }
+
+        function toggleOverlay() {
+            const cb = document.getElementById('overlay_chk');
+            const img = document.getElementById('overlay_img');
+            if (cb.checked) {
+                wsOverlay = new WebSocket(`ws://${location.host}/ws/overlay`);
+                wsOverlay.onmessage = ev => {
+                    img.src = URL.createObjectURL(new Blob([ev.data]));
+                };
+            } else if (wsOverlay) { wsOverlay.close(); wsOverlay = null; img.src = ''; }
+        }
+
         window.onload = () => {
             loadModels();
             updatePositions();
@@ -61,6 +114,18 @@
 <div>
     <img src="/stream/left" width="320">
     <img src="/stream/right" width="320">
+</div>
+<div class="controls">
+    <label><input type="checkbox" id="rect_chk" onchange="toggleRect()">Rectified</label>
+    <label><input type="checkbox" id="depth_chk" onchange="toggleDepth()">Depth</label>
+    <label><input type="checkbox" id="mask_chk" onchange="toggleMasks()">Masks</label>
+    <label><input type="checkbox" id="overlay_chk" onchange="toggleOverlay()">Overlay</label>
+</div>
+<div class="controls">
+    <img id="rect_img" class="preview">
+    <img id="depth_img" class="preview">
+    <img id="mask_img" class="preview">
+    <img id="overlay_img" class="preview">
 </div>
 <h2>Calibration</h2>
 <form action="/calibration/start" method="post">
