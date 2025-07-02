@@ -123,3 +123,51 @@ def test_calibration_flow(monkeypatch):
     assert resp.status_code == 200
     assert "m1" in resp.json()
     web.manager.stop()
+
+
+def test_camera_modes(monkeypatch):
+    class DummyCap:
+        def __init__(self, *_):
+            self.width = 640
+            self.height = 480
+            self.fps = 30
+
+        def isOpened(self):
+            return True
+
+        def set(self, prop, val):
+            if prop == web.cv2.CAP_PROP_FRAME_WIDTH:
+                self.width = val
+            if prop == web.cv2.CAP_PROP_FRAME_HEIGHT:
+                self.height = val
+            if prop == web.cv2.CAP_PROP_FPS:
+                self.fps = val
+
+        def get(self, prop):
+            mapping = {
+                web.cv2.CAP_PROP_FRAME_WIDTH: self.width,
+                web.cv2.CAP_PROP_FRAME_HEIGHT: self.height,
+                web.cv2.CAP_PROP_FPS: self.fps,
+            }
+            return mapping[prop]
+
+        def release(self):
+            pass
+
+    monkeypatch.setattr(web.cv2, "VideoCapture", lambda i: DummyCap())
+    client = TestClient(web.app)
+    resp = client.get("/camera_modes")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "modes" in data
+
+
+def test_models(monkeypatch, tmp_path):
+    ckpt = tmp_path / "model.pth"
+    ckpt.write_text("dummy")
+    monkeypatch.setattr(web, "models", web.ModelManager(str(tmp_path)))
+    client = TestClient(web.app)
+    resp = client.get("/models")
+    assert resp.json()["models"] == ["model"]
+    resp = client.post("/models/select?name=model")
+    assert resp.json()["selected"] == "model"
