@@ -4,7 +4,21 @@ set -e
 # Fetch submodules before doing anything else
 git submodule update --init
 
-git clone https://github.com/NVIDIA/MinkowskiEngine ./external/OpenYOLO3D/models/Mask3D/third_party/
+TARGET_DIR="./external/OpenYOLO3D/models/Mask3D/third_party/MinkowskiEngine"
+
+if [ -d "$TARGET_DIR" ]; then
+    # Ordner existiert
+    if [ "$(ls -A "$TARGET_DIR")" ]; then
+        echo "MinkowskiEngine existiert und ist **nicht leer** – git clone wird übersprungen."
+    else
+        echo "MinkowskiEngine existiert, ist aber **leer** – wird gelöscht und neu gecloned."
+        rm -rf "$TARGET_DIR"
+        git clone https://github.com/NVIDIA/MinkowskiEngine "$TARGET_DIR"
+    fi
+else
+    echo "MinkowskiEngine existiert **nicht** – wird neu gecloned."
+    git clone https://github.com/NVIDIA/MinkowskiEngine "$TARGET_DIR"
+fi
 
 # Fetch pretrained checkpoints for YOLO3D and DOPE
 ./fetch_models.sh || true
