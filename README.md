@@ -148,6 +148,16 @@ Alternatively you can run the non‑GUI helper which works with side‑by‑side
 python -m lerobot_vision.calibrate_cli --device 0 --output calibration.yaml
 ```
 
+### Web interface
+
+Launch the FastAPI server with:
+
+```bash
+python serve_web.py --reload
+```
+
+Open `http://localhost:8000/ui` in your browser to access the controls.
+
 ### 4. Project structure
 
 ```

@@ -211,6 +211,7 @@ dependencies:
       - typing-extensions==4.5.0
       - tzdata==2023.3
       - uvicorn==0.21.1
+      - pynput==1.7.6
       - volumentations==0.1.8
       - wandb==0.15.0
       - wcwidth==0.2.6
