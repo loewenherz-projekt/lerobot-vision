@@ -75,3 +75,51 @@ def test_robot_move():
     assert resp.json() == {"status": "ok"}
     resp = client.get("/robot/positions")
     assert resp.json() == {"positions": [1.0, 2.0]}
+
+
+def test_ui_route(monkeypatch):
+    client = TestClient(web.app)
+    resp = client.get("/ui")
+    assert resp.status_code == 200
+    assert b"LeRobot Web Interface" in resp.content
+
+
+def test_calibration_flow(monkeypatch):
+    frame = np.zeros((2, 2, 3), dtype=np.uint8)
+
+    class DummyCam:
+        def __init__(self, *a, **k):
+            pass
+
+        def get_frames(self):
+            return frame, frame
+
+        def release(self):
+            pass
+
+        def get_properties(self):
+            return {"width": 2, "height": 2, "fps": 30}
+
+    class DummyCal:
+        def __init__(self, *a, **k):
+            self.pairs = 0
+
+        def add_corners(self, l, r):
+            self.pairs += 1
+            return True
+
+        def calibrate(self, size):
+            return np.eye(3), np.zeros(5), np.eye(3), np.zeros(5), np.eye(3), np.zeros(3), None
+
+    monkeypatch.setattr(web, "AsyncStereoCamera", DummyCam)
+    monkeypatch.setattr(web, "StereoCalibrator", DummyCal)
+    web.manager.start()
+    client = TestClient(web.app)
+    resp = client.post("/calibration/start")
+    assert resp.status_code == 200
+    resp = client.post("/calibration/capture")
+    assert resp.json() == {"captured": True}
+    resp = client.post("/calibration/finish")
+    assert resp.status_code == 200
+    assert "m1" in resp.json()
+    web.manager.stop()

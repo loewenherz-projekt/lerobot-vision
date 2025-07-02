@@ -3,12 +3,16 @@ from __future__ import annotations
 """Minimal FastAPI web interface for the stereo system."""
 
 import cv2
-from fastapi import FastAPI, Response
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi import FastAPI, Response, Request, WebSocket
+from fastapi.responses import StreamingResponse, JSONResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 from .camera_interface import AsyncStereoCamera
+from .stereo_calibrator import StereoCalibrator
+from .nlp_node import NlpNode
 
 app = FastAPI(title="LeRobot Web")
+templates = Jinja2Templates(directory="webapp/templates")
 
 
 class CameraManager:
@@ -55,6 +59,40 @@ class RobotManager:
 
 
 robot = RobotManager()
+
+
+class CalibrationManager:
+    """Manage stereo calibration via API."""
+
+    def __init__(self) -> None:
+        self.calibrator: StereoCalibrator | None = None
+
+    def start(self, board_w: int = 7, board_h: int = 6, size: float = 1.0) -> None:
+        self.calibrator = StereoCalibrator((board_w, board_h), size)
+
+    def add_pair(self) -> bool:
+        if not self.calibrator or not manager.camera:
+            return False
+        left, right = manager.camera.get_frames()
+        return self.calibrator.add_corners(left, right)
+
+    def finish(self) -> dict[str, float] | None:
+        if not self.calibrator or not manager.camera:
+            return None
+        props = manager.camera.get_properties()
+        res = self.calibrator.calibrate((props["width"], props["height"]))
+        m1, d1, m2, d2, r, t, _ = res
+        return {
+            "m1": m1.tolist(),
+            "d1": d1.tolist(),
+            "m2": m2.tolist(),
+            "d2": d2.tolist(),
+            "r": r.tolist(),
+            "t": t.tolist(),
+        }
+
+
+calibration = CalibrationManager()
 
 
 @app.get("/")
@@ -141,3 +179,65 @@ def robot_move(positions: str) -> dict[str, str]:
         return {"status": "invalid"}
     robot.move(vals)
     return {"status": "ok"}
+
+
+@app.get("/ui", response_class=HTMLResponse)
+def ui(request: Request) -> HTMLResponse:
+    """Serve the minimal HTML frontend."""
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.websocket("/ws/frames/{side}")
+async def ws_frames(websocket: WebSocket, side: str) -> None:
+    await websocket.accept()
+    while True:
+        lbuf, rbuf = manager.frames()
+        buf = lbuf if side == "left" else rbuf
+        await websocket.send_bytes(buf)
+
+
+@app.post("/calibration/start")
+def calibration_start(board_w: int = 7, board_h: int = 6, size: float = 1.0) -> dict[str, str]:
+    calibration.start(board_w, board_h, size)
+    return {"status": "ready"}
+
+
+@app.post("/calibration/capture")
+def calibration_capture() -> JSONResponse:
+    ok = calibration.add_pair()
+    return JSONResponse(content={"captured": bool(ok)})
+
+
+@app.post("/calibration/finish")
+def calibration_finish() -> JSONResponse:
+    result = calibration.finish()
+    if result is None:
+        return JSONResponse(status_code=400, content={"error": "no data"})
+    return JSONResponse(content=result)
+
+
+modules: dict[str, bool] = {"yolo3d": False, "dope": False, "slam": False}
+
+
+@app.get("/modules")
+def list_modules() -> JSONResponse:
+    return JSONResponse(content=modules)
+
+
+@app.post("/modules/select")
+def select_module(name: str, enable: bool = True) -> dict[str, str]:
+    modules[name] = enable
+    return {"status": "ok"}
+
+
+@app.post("/robot/params")
+def robot_params(payload: str) -> dict[str, str]:
+    # stub for robot configuration
+    return {"status": "ok"}
+
+
+@app.post("/nlp")
+def nlp(text: str) -> JSONResponse:
+    node = NlpNode()
+    actions = node._call_llm(text)
+    return JSONResponse(content={"actions": actions})
