@@ -2,7 +2,7 @@
 set -e
 
 # Fetch submodules before doing anything else
-git submodule update --init --recursive
+git submodule update --init
 
 # Fetch pretrained checkpoints for YOLO3D and DOPE
 ./fetch_models.sh || true
