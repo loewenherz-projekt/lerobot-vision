@@ -20,7 +20,10 @@ class NlpNode(Node):
     def __init__(self) -> None:
         """Initialize the NLP node."""
         super().__init__("nlp_node")
-        openai.api_key = os.environ.get("OPENAI_API_KEY")
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            raise RuntimeError("OPENAI_API_KEY environment variable not set")
+        openai.api_key = api_key
         self.sub = self.create_subscription(
             String,
             "/robot/vision/scene",

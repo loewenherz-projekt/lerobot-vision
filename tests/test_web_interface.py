@@ -74,10 +74,13 @@ def test_camera_info(monkeypatch):
 
 def test_robot_move():
     client = TestClient(web.app)
-    resp = client.post("/robot/move", params={"positions": "1,2"})
+    resp = client.post(
+        "/robot/move",
+        params={"positions": "1,2,3,4,5,6"},
+    )
     assert resp.json() == {"status": "ok"}
     resp = client.get("/robot/positions")
-    assert resp.json() == {"positions": [1.0, 2.0]}
+    assert resp.json() == {"positions": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]}
 
 
 def test_ui_route(monkeypatch):
@@ -259,10 +262,13 @@ def test_robot_params(monkeypatch, tmp_path):
     class DummyRobot:
         def __init__(self, port, robot_id):
             self.args = (port, robot_id)
+
         def move_to_joint_positions(self, pos):
             self.pos = pos
+
         def get_joint_positions(self):
             return [0.0] * 6
+
     monkeypatch.setattr(web, "Robot", DummyRobot)
     client = TestClient(web.app)
     resp = client.post("/robot/params", params={"payload": str(path)})
@@ -277,7 +283,11 @@ def test_fk_ik_endpoints():
     assert resp.status_code == 200
     data = resp.json()
     assert data["position"] == [1.0, 2.0, 3.0]
-    assert data["orientation"] == [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+    assert data["orientation"] == [
+        [1.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.0, 1.0],
+    ]
     pose = "1,2,3,0,0,0"
     resp = client.get("/robot/ik", params={"pose": pose})
     assert resp.status_code == 200

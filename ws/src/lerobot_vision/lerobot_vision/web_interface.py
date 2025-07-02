@@ -5,6 +5,7 @@ from __future__ import annotations
 import cv2
 import numpy as np
 from fastapi import FastAPI, Response, Request, WebSocket, UploadFile, File
+from starlette.websockets import WebSocketDisconnect
 from fastapi.responses import StreamingResponse, JSONResponse, HTMLResponse
 from pathlib import Path
 import asyncio
@@ -27,6 +28,7 @@ from .kinematics import (
     rpy_to_matrix,
 )
 import logging
+
 try:
     from lerobot import Robot
 except Exception as exc:  # pragma: no cover - optional
@@ -200,14 +202,28 @@ class VisualizationHelper:
                 xq, yq, zq, wq = quat
                 rot = np.array(
                     [
-                        [1 - 2 * (yq ** 2 + zq ** 2), 2 * (xq * yq - zq * wq), 2 * (xq * zq + yq * wq)],
-                        [2 * (xq * yq + zq * wq), 1 - 2 * (xq ** 2 + zq ** 2), 2 * (yq * zq - xq * wq)],
-                        [2 * (xq * zq - yq * wq), 2 * (yq * zq + xq * wq), 1 - 2 * (xq ** 2 + yq ** 2)],
+                        [
+                            1 - 2 * (yq**2 + zq**2),
+                            2 * (xq * yq - zq * wq),
+                            2 * (xq * zq + yq * wq),
+                        ],
+                        [
+                            2 * (xq * yq + zq * wq),
+                            1 - 2 * (xq**2 + zq**2),
+                            2 * (yq * zq - xq * wq),
+                        ],
+                        [
+                            2 * (xq * zq - yq * wq),
+                            2 * (yq * zq + xq * wq),
+                            1 - 2 * (xq**2 + yq**2),
+                        ],
                     ]
                 )
                 center = np.array([x, y, z], dtype=float)
                 axes = rot @ (0.05 * np.eye(3))
-                for axis, color in zip(axes.T, [(0, 0, 255), (0, 255, 0), (255, 0, 0)]):
+                for axis, color in zip(
+                    axes.T, [(0, 0, 255), (0, 255, 0), (255, 0, 0)]
+                ):
                     pt2 = _proj(center + axis)
                     cv2.line(image, (int(u), int(v)), pt2, color, 2)
         return image
@@ -246,7 +262,9 @@ class VisualizationHelper:
                 poses = self.pose.estimate(left_r)
             except Exception:
                 poses = None
-        overlay = self._draw_overlay(left_r.copy(), masks, labels, depth, poses)
+        overlay = self._draw_overlay(
+            left_r.copy(), masks, labels, depth, poses
+        )
         return left_r, right_r, depth, masks, overlay
 
 
@@ -264,7 +282,9 @@ class ModelManager:
     def list_models(self) -> list[str]:
         return sorted(p.stem for p in self.root.glob("*.pth"))
 
-    def select(self, module: str, name: str, score_threshold: float | None = None) -> None:
+    def select(
+        self, module: str, name: str, score_threshold: float | None = None
+    ) -> None:
         if name in self.list_models():
             self.selected[module] = name
             if score_threshold is not None:
@@ -451,6 +471,8 @@ def robot_move(positions: str) -> dict[str, str]:
         vals = [float(p) for p in positions.split(",")]
     except Exception:
         return {"status": "invalid"}
+    if len(vals) != 6:
+        return {"status": "invalid"}
     robot.move(vals)
     return {"status": "ok"}
 
@@ -463,7 +485,9 @@ def robot_fk(joints: str) -> JSONResponse:
     except Exception:
         return JSONResponse(status_code=400, content={"error": "invalid"})
     pos, rot = forward_kinematics(vals)
-    return JSONResponse(content={"position": pos.tolist(), "orientation": rot.tolist()})
+    return JSONResponse(
+        content={"position": pos.tolist(), "orientation": rot.tolist()}
+    )
 
 
 @app.get("/robot/ik")
@@ -490,82 +514,107 @@ def ui(request: Request) -> HTMLResponse:
 @app.websocket("/ws/frames/{side}")
 async def ws_frames(websocket: WebSocket, side: str) -> None:
     await websocket.accept()
-    while True:
-        lbuf, rbuf = manager.frames()
-        buf = lbuf if side == "left" else rbuf
-        await websocket.send_bytes(buf)
+    try:
+        while True:
+            lbuf, rbuf = manager.frames()
+            buf = lbuf if side == "left" else rbuf
+            await websocket.send_bytes(buf)
+    except WebSocketDisconnect:
+        logging.info("frames websocket disconnected")
 
 
 @app.websocket("/ws/calibration/{side}")
 async def ws_calibration_frames(websocket: WebSocket, side: str) -> None:
     await websocket.accept()
-    while True:
-        lbuf, rbuf = manager.frames()
-        buf = lbuf if side == "left" else rbuf
-        await websocket.send_bytes(buf)
+    try:
+        while True:
+            lbuf, rbuf = manager.frames()
+            buf = lbuf if side == "left" else rbuf
+            await websocket.send_bytes(buf)
+    except WebSocketDisconnect:
+        logging.info("calibration websocket disconnected")
 
 
 @app.websocket("/ws/rectified/{side}")
 async def ws_rectified(websocket: WebSocket, side: str) -> None:
     await websocket.accept()
-    while True:
-        left, right = manager.frames()
-        left_r, right_r, _, _, _ = vis_helper.compute(left, right)
-        frame = left_r if side == "left" else right_r
-        _, buf = cv2.imencode(".jpg", frame)
-        await websocket.send_bytes(buf.tobytes())
+    try:
+        while True:
+            left, right = manager.frames()
+            left_r, right_r, _, _, _ = vis_helper.compute(left, right)
+            frame = left_r if side == "left" else right_r
+            _, buf = cv2.imencode(".jpg", frame)
+            await websocket.send_bytes(buf.tobytes())
+    except WebSocketDisconnect:
+        logging.info("rectified websocket disconnected")
 
 
 @app.websocket("/ws/depth")
 async def ws_depth(websocket: WebSocket) -> None:
     await websocket.accept()
-    while True:
-        left, right = manager.frames()
-        left_r, _right_r, depth, _, _ = vis_helper.compute(left, right)
-        dnorm = cv2.normalize(depth, None, 0, 255, cv2.NORM_MINMAX)
-        dcol = cv2.applyColorMap(dnorm.astype(np.uint8), cv2.COLORMAP_JET)
-        _, buf = cv2.imencode(".jpg", dcol)
-        await websocket.send_bytes(buf.tobytes())
+    try:
+        while True:
+            left, right = manager.frames()
+            left_r, _right_r, depth, _, _ = vis_helper.compute(left, right)
+            dnorm = cv2.normalize(depth, None, 0, 255, cv2.NORM_MINMAX)
+            dcol = cv2.applyColorMap(dnorm.astype(np.uint8), cv2.COLORMAP_JET)
+            _, buf = cv2.imencode(".jpg", dcol)
+            await websocket.send_bytes(buf.tobytes())
+    except WebSocketDisconnect:
+        logging.info("depth websocket disconnected")
 
 
 @app.websocket("/ws/masks")
 async def ws_masks(websocket: WebSocket) -> None:
     await websocket.accept()
-    while True:
-        left, right = manager.frames()
-        left_r, _right_r, _depth, masks, _overlay = vis_helper.compute(left, right)
-        mask_img = np.zeros_like(left_r)
-        palette = [
-            (255, 0, 0),
-            (0, 255, 0),
-            (0, 0, 255),
-            (255, 255, 0),
-            (255, 0, 255),
-            (0, 255, 255),
-        ]
-        for idx, mask in enumerate(masks):
-            color = palette[idx % len(palette)]
-            mask_img[mask > 0] = color
-        _, buf = cv2.imencode(".jpg", mask_img)
-        await websocket.send_bytes(buf.tobytes())
+    try:
+        while True:
+            left, right = manager.frames()
+            left_r, _right_r, _depth, masks, _overlay = vis_helper.compute(
+                left, right
+            )
+            mask_img = np.zeros_like(left_r)
+            palette = [
+                (255, 0, 0),
+                (0, 255, 0),
+                (0, 0, 255),
+                (255, 255, 0),
+                (255, 0, 255),
+                (0, 255, 255),
+            ]
+            for idx, mask in enumerate(masks):
+                color = palette[idx % len(palette)]
+                mask_img[mask > 0] = color
+            _, buf = cv2.imencode(".jpg", mask_img)
+            await websocket.send_bytes(buf.tobytes())
+    except WebSocketDisconnect:
+        logging.info("masks websocket disconnected")
 
 
 @app.websocket("/ws/overlay")
 async def ws_overlay(websocket: WebSocket) -> None:
     await websocket.accept()
-    while True:
-        left, right = manager.frames()
-        _left_r, _right_r, _depth, _masks, overlay = vis_helper.compute(left, right)
-        _, buf = cv2.imencode(".jpg", overlay)
-        await websocket.send_bytes(buf.tobytes())
+    try:
+        while True:
+            left, right = manager.frames()
+            _left_r, _right_r, _depth, _masks, overlay = vis_helper.compute(
+                left, right
+            )
+            _, buf = cv2.imencode(".jpg", overlay)
+            await websocket.send_bytes(buf.tobytes())
+    except WebSocketDisconnect:
+        logging.info("overlay websocket disconnected")
 
 
 @app.websocket("/ws/robot/positions")
 async def ws_robot_positions(websocket: WebSocket) -> None:
     await websocket.accept()
-    while True:
-        await websocket.send_json({"positions": robot.get_positions()})
-        await asyncio.sleep(0.1)
+    try:
+        while True:
+            await websocket.send_json({"positions": robot.get_positions()})
+            await asyncio.sleep(0.1)
+    except WebSocketDisconnect:
+        logging.info("robot positions websocket disconnected")
 
 
 @app.post("/calibration/start")
@@ -681,7 +730,9 @@ def nlp(text: str) -> JSONResponse:
                     for point in getattr(traj, "points", []):
                         robot.move(list(point.positions))
                         executed = True
-                except Exception as exc:  # pragma: no cover - planning optional
+                except (
+                    Exception
+                ) as exc:  # pragma: no cover - planning optional
                     logging.error("Planning failed: %s", exc)
     except Exception as exc:  # pragma: no cover - runtime
         logging.error("NLP execution error: %s", exc)
