@@ -14,6 +14,17 @@ from fastapi.templating import Jinja2Templates
 from .camera_interface import AsyncStereoCamera
 from .stereo_calibrator import StereoCalibrator
 from .nlp_node import NlpNode
+from .kinematics import (
+    forward_kinematics,
+    inverse_kinematics,
+    rpy_to_matrix,
+)
+import logging
+try:
+    from lerobot import Robot
+except Exception as exc:  # pragma: no cover - optional
+    Robot = None
+    logging.error("LeRobot import failed: %s", exc)
 
 app = FastAPI(title="LeRobot Web")
 templates = Jinja2Templates(directory="webapp/templates")
@@ -60,15 +71,48 @@ manager = CameraManager()
 
 
 class RobotManager:
-    """Very small manager mimicking robot joint control."""
+    """Simple interface to a :class:`lerobot.Robot` instance."""
 
     def __init__(self) -> None:
         self.positions = [0.0] * 6
+        self.port = "/dev/ttyUSB0"
+        self.robot_id = 1
+        self.robot: Robot | None = None
+
+    def load_params(self, payload: str) -> None:
+        """Load configuration from a YAML string or file path."""
+        try:
+            if Path(payload).is_file():
+                data = yaml.safe_load(Path(payload).read_text())
+            else:
+                data = yaml.safe_load(payload)
+            if isinstance(data, dict):
+                self.port = data.get("port", self.port)
+                self.robot_id = int(data.get("robot_id", self.robot_id))
+        except Exception as exc:  # pragma: no cover - file IO optional
+            logging.error("Failed to load robot params: %s", exc)
+            return
+        if Robot is not None:
+            try:
+                self.robot = Robot(self.port, self.robot_id)
+            except Exception as exc:  # pragma: no cover - runtime
+                logging.error("Robot init failed: %s", exc)
+                self.robot = None
 
     def move(self, positions: list[float]) -> None:
         self.positions = positions
+        if self.robot is not None:
+            try:
+                self.robot.move_to_joint_positions(positions)
+            except Exception as exc:  # pragma: no cover - runtime
+                logging.error("Robot movement failed: %s", exc)
 
     def get_positions(self) -> list[float]:
+        if self.robot is not None:
+            try:
+                return list(self.robot.get_joint_positions())
+            except Exception:  # pragma: no cover - runtime
+                pass
         return self.positions.copy()
 
 
@@ -277,6 +321,32 @@ def robot_move(positions: str) -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/robot/fk")
+def robot_fk(joints: str) -> JSONResponse:
+    """Return forward kinematics for a comma separated joint list."""
+    try:
+        vals = [float(p) for p in joints.split(",")]
+    except Exception:
+        return JSONResponse(status_code=400, content={"error": "invalid"})
+    pos, rot = forward_kinematics(vals)
+    return JSONResponse(content={"position": pos.tolist(), "orientation": rot.tolist()})
+
+
+@app.get("/robot/ik")
+def robot_ik(pose: str) -> JSONResponse:
+    """Compute inverse kinematics for a target pose."""
+    try:
+        vals = [float(p) for p in pose.split(",")]
+    except Exception:
+        return JSONResponse(status_code=400, content={"error": "invalid"})
+    if len(vals) != 6:
+        return JSONResponse(status_code=400, content={"error": "invalid"})
+    position = vals[:3]
+    matrix = rpy_to_matrix(vals[3:])
+    joints = inverse_kinematics(position, matrix)
+    return JSONResponse(content={"joints": joints})
+
+
 @app.get("/ui", response_class=HTMLResponse)
 def ui(request: Request) -> HTMLResponse:
     """Serve the minimal HTML frontend."""
@@ -399,7 +469,7 @@ def select_model(name: str) -> dict[str, str]:
 
 @app.post("/robot/params")
 def robot_params(payload: str) -> dict[str, str]:
-    # stub for robot configuration
+    robot.load_params(payload)
     return {"status": "ok"}
 
 

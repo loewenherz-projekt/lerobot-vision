@@ -248,3 +248,36 @@ def test_inference_test(monkeypatch):
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "image/jpeg"
     assert called.get("done") is True
+
+
+def test_robot_params(monkeypatch, tmp_path):
+    cfg = {"port": "/dev/ttyS1", "robot_id": 5}
+    path = tmp_path / "robot.yaml"
+    path.write_text(yaml.safe_dump(cfg))
+
+    class DummyRobot:
+        def __init__(self, port, robot_id):
+            self.args = (port, robot_id)
+        def move_to_joint_positions(self, pos):
+            self.pos = pos
+        def get_joint_positions(self):
+            return [0.0] * 6
+    monkeypatch.setattr(web, "Robot", DummyRobot)
+    client = TestClient(web.app)
+    resp = client.post("/robot/params", params={"payload": str(path)})
+    assert resp.status_code == 200
+    assert isinstance(web.robot.robot, DummyRobot)
+    assert web.robot.robot.args == ("/dev/ttyS1", 5)
+
+
+def test_fk_ik_endpoints():
+    client = TestClient(web.app)
+    resp = client.get("/robot/fk", params={"joints": "1,2,3,0,0,0"})
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["position"] == [1.0, 2.0, 3.0]
+    assert data["orientation"] == [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+    pose = "1,2,3,0,0,0"
+    resp = client.get("/robot/ik", params={"pose": pose})
+    assert resp.status_code == 200
+    assert resp.json()["joints"] == [1.0, 2.0, 3.0, 0.0, 0.0, 0.0]

@@ -14,6 +14,7 @@ from .fusion import FusionModule  # noqa: E402
 from .stereo_calibrator import StereoCalibrator  # noqa: E402
 from .calibrate_cli import main as calibrate_cli  # noqa: E402
 from .slam_node import SlamNode  # noqa: E402
+from .kinematics import forward_kinematics, inverse_kinematics  # noqa: E402
 
 __all__ = [
     "StereoCamera",
@@ -26,4 +27,6 @@ __all__ = [
     "StereoCalibrator",
     "calibrate_cli",
     "SlamNode",
+    "forward_kinematics",
+    "inverse_kinematics",
 ]
