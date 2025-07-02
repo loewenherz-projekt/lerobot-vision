@@ -4,6 +4,8 @@ set -e
 # Fetch submodules before doing anything else
 git submodule update --init
 
+git clone https://github.com/NVIDIA/MinkowskiEngine ./external/OpenYOLO3D/models/Mask3D/third_party/
+
 # Fetch pretrained checkpoints for YOLO3D and DOPE
 ./fetch_models.sh || true
 
