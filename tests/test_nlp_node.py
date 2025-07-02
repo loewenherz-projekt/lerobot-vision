@@ -4,8 +4,13 @@ from unittest import mock
 from lerobot_vision.nlp_node import NlpNode
 
 
+def _make_node(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
+    return NlpNode()
+
+
 def test_call_llm(monkeypatch):
-    node = NlpNode()
+    node = _make_node(monkeypatch)
     fake_resp = mock.Mock(
         choices=[
             mock.Mock(
@@ -23,7 +28,7 @@ def test_call_llm(monkeypatch):
 
 
 def test_call_llm_failure(monkeypatch):
-    node = NlpNode()
+    node = _make_node(monkeypatch)
     monkeypatch.setattr(
         "openai.ChatCompletion.create",
         mock.Mock(side_effect=Exception("fail")),
@@ -33,7 +38,7 @@ def test_call_llm_failure(monkeypatch):
 
 
 def test_nlp_cb(monkeypatch):
-    node = NlpNode()
+    node = _make_node(monkeypatch)
     node._call_llm = mock.Mock(return_value=[{"foo": 1}])
     node.pub = mock.Mock()
     msg = mock.Mock(data="{}")
