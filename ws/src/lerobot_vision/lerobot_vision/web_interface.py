@@ -3,7 +3,8 @@ from __future__ import annotations
 """Minimal FastAPI web interface for the stereo system."""
 
 import cv2
-from fastapi import FastAPI, Response, Request, WebSocket
+import numpy as np
+from fastapi import FastAPI, Response, Request, WebSocket, UploadFile, File
 from fastapi.responses import StreamingResponse, JSONResponse, HTMLResponse
 from pathlib import Path
 import asyncio
@@ -75,18 +76,21 @@ robot = RobotManager()
 
 
 class ModelManager:
-    """Manage available AI model checkpoints."""
+    """Manage available AI model checkpoints and settings."""
 
     def __init__(self, root: str = "external/checkpoints") -> None:
         self.root = Path(root)
-        self.selected: str | None = None
+        self.selected: dict[str, str] = {}
+        self.thresholds: dict[str, float] = {}
 
     def list_models(self) -> list[str]:
         return sorted(p.stem for p in self.root.glob("*.pth"))
 
-    def select(self, name: str) -> None:
+    def select(self, module: str, name: str, score_threshold: float | None = None) -> None:
         if name in self.list_models():
-            self.selected = name
+            self.selected[module] = name
+            if score_threshold is not None:
+                self.thresholds[module] = float(score_threshold)
 
 
 models = ModelManager()
@@ -328,7 +332,32 @@ def calibration_finish() -> JSONResponse:
     return JSONResponse(content=result)
 
 
-modules: dict[str, bool] = {"yolo3d": False, "dope": False, "slam": False}
+modules: dict[str, dict[str, float | bool]] = {
+    "yolo3d": {"enabled": False, "score_threshold": 0.5},
+    "dope": {"enabled": False, "score_threshold": 0.5},
+    "slam": {"enabled": False, "score_threshold": 0.5},
+}
+
+
+def run_inference(image: np.ndarray) -> np.ndarray:
+    """Run enabled modules on the given image and draw overlays."""
+    output = image.copy()
+    y = 15
+    for name, cfg in modules.items():
+        if not cfg.get("enabled"):
+            continue
+        text = f"{name}:{cfg.get('score_threshold', 0.0)}"
+        cv2.putText(
+            output,
+            text,
+            (10, y),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 255, 0),
+            1,
+        )
+        y += 15
+    return output
 
 
 @app.get("/modules")
@@ -337,22 +366,35 @@ def list_modules() -> JSONResponse:
 
 
 @app.post("/modules/select")
-def select_module(name: str, enable: bool = True) -> dict[str, str]:
-    modules[name] = enable
+def select_module(
+    name: str,
+    enable: bool = True,
+    score_threshold: float | None = None,
+) -> dict[str, str]:
+    if name not in modules:
+        modules[name] = {"enabled": enable, "score_threshold": 0.5}
+    else:
+        modules[name]["enabled"] = enable
+    if score_threshold is not None:
+        modules[name]["score_threshold"] = float(score_threshold)
     return {"status": "ok"}
 
 
 @app.get("/models")
 def list_models() -> JSONResponse:
     return JSONResponse(
-        content={"models": models.list_models(), "selected": models.selected}
+        content={
+            "models": models.list_models(),
+            "selected": models.selected,
+            "thresholds": models.thresholds,
+        }
     )
 
 
 @app.post("/models/select")
 def select_model(name: str) -> dict[str, str]:
-    models.select(name)
-    return {"status": "ok", "selected": models.selected}
+    models.select("default", name)
+    return {"status": "ok", "selected": models.selected.get("default")}
 
 
 @app.post("/robot/params")
@@ -366,3 +408,15 @@ def nlp(text: str) -> JSONResponse:
     node = NlpNode()
     actions = node._call_llm(text)
     return JSONResponse(content={"actions": actions})
+
+
+@app.post("/inference/test")
+async def inference_test(file: UploadFile = File(...)) -> Response:
+    data = await file.read()
+    arr = np.frombuffer(data, np.uint8)
+    img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    if img is None:
+        return Response(status_code=400)
+    overlay = run_inference(img)
+    _, buf = cv2.imencode(".jpg", overlay)
+    return Response(content=buf.tobytes(), media_type="image/jpeg")

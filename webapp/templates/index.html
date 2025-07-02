@@ -34,6 +34,16 @@
             document.getElementById('chat_log').textContent = JSON.stringify(data.actions);
         }
 
+        async function runInferenceTest() {
+            const file = document.getElementById('test_image').files[0];
+            if (!file) return;
+            const fd = new FormData();
+            fd.append('file', file);
+            const resp = await fetch('/inference/test', {method: 'POST', body: fd});
+            const blob = await resp.blob();
+            document.getElementById('test_output').src = URL.createObjectURL(blob);
+        }
+
         window.onload = () => {
             loadModels();
             updatePositions();
@@ -79,6 +89,13 @@
     <input id="chat_input" type="text">
     <button onclick="sendChat()">Send</button>
     <pre id="chat_log"></pre>
+</div>
+<div>
+    <h3>Inference test</h3>
+    <input type="file" id="test_image">
+    <button onclick="runInferenceTest()">Run</button>
+    <br>
+    <img id="test_output" width="320">
 </div>
 </body>
 </html>

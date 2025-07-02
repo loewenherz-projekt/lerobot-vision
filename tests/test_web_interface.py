@@ -1,4 +1,5 @@
 import numpy as np
+import cv2
 from fastapi.testclient import TestClient
 import yaml
 
@@ -214,3 +215,36 @@ def test_models(monkeypatch, tmp_path):
     assert resp.json()["models"] == ["model"]
     resp = client.post("/models/select?name=model")
     assert resp.json()["selected"] == "model"
+
+
+def test_modules_settings():
+    client = TestClient(web.app)
+    resp = client.get("/modules")
+    assert "yolo3d" in resp.json()
+    resp = client.post(
+        "/modules/select",
+        params={"name": "yolo3d", "enable": "true", "score_threshold": "0.7"},
+    )
+    assert resp.status_code == 200
+    assert web.modules["yolo3d"]["enabled"] is True
+    assert web.modules["yolo3d"]["score_threshold"] == 0.7
+
+
+def test_inference_test(monkeypatch):
+    img = np.zeros((2, 2, 3), dtype=np.uint8)
+    _, buf = cv2.imencode(".jpg", img)
+    called = {}
+
+    def dummy_run(image):
+        called["done"] = True
+        return image
+
+    monkeypatch.setattr(web, "run_inference", dummy_run)
+    client = TestClient(web.app)
+    resp = client.post(
+        "/inference/test",
+        files={"file": ("test.jpg", buf.tobytes(), "image/jpeg")},
+    )
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] == "image/jpeg"
+    assert called.get("done") is True
