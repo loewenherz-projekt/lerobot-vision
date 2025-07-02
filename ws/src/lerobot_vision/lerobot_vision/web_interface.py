@@ -41,6 +41,22 @@ class CameraManager:
 manager = CameraManager()
 
 
+class RobotManager:
+    """Very small manager mimicking robot joint control."""
+
+    def __init__(self) -> None:
+        self.positions = [0.0] * 6
+
+    def move(self, positions: list[float]) -> None:
+        self.positions = positions
+
+    def get_positions(self) -> list[float]:
+        return self.positions.copy()
+
+
+robot = RobotManager()
+
+
 @app.get("/")
 def index() -> dict[str, str]:
     return {"status": "ok"}
@@ -55,6 +71,20 @@ def list_cameras(max_index: int = 4) -> JSONResponse:
             indices.append(idx)
         cap.release()
     return JSONResponse(content={"cameras": indices})
+
+
+@app.get("/camera_info")
+def camera_info(index: int = 0) -> JSONResponse:
+    cap = cv2.VideoCapture(index)
+    if not cap.isOpened():
+        return Response(status_code=404)
+    info = {
+        "width": int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+        "height": int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+        "fps": int(cap.get(cv2.CAP_PROP_FPS)),
+    }
+    cap.release()
+    return JSONResponse(content=info)
 
 
 def _mjpeg_generator(side: str = "left"):
@@ -86,3 +116,28 @@ def start(
 def stop() -> dict[str, str]:
     manager.stop()
     return {"status": "stopped"}
+
+
+@app.post("/camera_settings")
+def camera_settings(
+    width: int | None = None, height: int | None = None, fps: int | None = None
+) -> dict[str, str]:
+    if not manager.camera:
+        return {"status": "no camera"}
+    manager.camera.set_properties(width, height, fps)
+    return {"status": "ok"}
+
+
+@app.get("/robot/positions")
+def robot_positions() -> JSONResponse:
+    return JSONResponse(content={"positions": robot.get_positions()})
+
+
+@app.post("/robot/move")
+def robot_move(positions: str) -> dict[str, str]:
+    try:
+        vals = [float(p) for p in positions.split(",")]
+    except Exception:
+        return {"status": "invalid"}
+    robot.move(vals)
+    return {"status": "ok"}
