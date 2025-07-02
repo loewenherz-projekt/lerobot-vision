@@ -16,7 +16,7 @@ for d in external/*; do
   fi
 done
 if [ $empty -ne 0 ]; then
-  echo "Submodule checkout failed. Please run 'git submodule update --init --recursive' manually." >&2
+  echo "Submodule checkout failed. Please run 'git submodule update --init' manually." >&2
   exit 1
 fi
 
