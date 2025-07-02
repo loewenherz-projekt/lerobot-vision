@@ -5,6 +5,8 @@ from __future__ import annotations
 import cv2
 from fastapi import FastAPI, Response, Request, WebSocket
 from fastapi.responses import StreamingResponse, JSONResponse, HTMLResponse
+from pathlib import Path
+import asyncio
 from fastapi.templating import Jinja2Templates
 
 from .camera_interface import AsyncStereoCamera
@@ -59,6 +61,24 @@ class RobotManager:
 
 
 robot = RobotManager()
+
+
+class ModelManager:
+    """Manage available AI model checkpoints."""
+
+    def __init__(self, root: str = "external/checkpoints") -> None:
+        self.root = Path(root)
+        self.selected: str | None = None
+
+    def list_models(self) -> list[str]:
+        return sorted(p.stem for p in self.root.glob("*.pth"))
+
+    def select(self, name: str) -> None:
+        if name in self.list_models():
+            self.selected = name
+
+
+models = ModelManager()
 
 
 class CalibrationManager:
@@ -123,6 +143,29 @@ def camera_info(index: int = 0) -> JSONResponse:
     }
     cap.release()
     return JSONResponse(content=info)
+
+
+@app.get("/camera_modes")
+def camera_modes(index: int = 0) -> JSONResponse:
+    """Return a small list of common capture modes."""
+    cap = cv2.VideoCapture(index)
+    if not cap.isOpened():
+        return Response(status_code=404)
+    modes: list[dict[str, int]] = []
+    presets = [(640, 480, 30), (1280, 720, 30), (1920, 1080, 30)]
+    for w, h, fps in presets:
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, w)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
+        cap.set(cv2.CAP_PROP_FPS, fps)
+        modes.append(
+            {
+                "width": int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                "height": int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+                "fps": int(cap.get(cv2.CAP_PROP_FPS)),
+            }
+        )
+    cap.release()
+    return JSONResponse(content={"modes": modes})
 
 
 def _mjpeg_generator(side: str = "left"):
@@ -196,6 +239,14 @@ async def ws_frames(websocket: WebSocket, side: str) -> None:
         await websocket.send_bytes(buf)
 
 
+@app.websocket("/ws/robot/positions")
+async def ws_robot_positions(websocket: WebSocket) -> None:
+    await websocket.accept()
+    while True:
+        await websocket.send_json({"positions": robot.get_positions()})
+        await asyncio.sleep(0.1)
+
+
 @app.post("/calibration/start")
 def calibration_start(board_w: int = 7, board_h: int = 6, size: float = 1.0) -> dict[str, str]:
     calibration.start(board_w, board_h, size)
@@ -228,6 +279,17 @@ def list_modules() -> JSONResponse:
 def select_module(name: str, enable: bool = True) -> dict[str, str]:
     modules[name] = enable
     return {"status": "ok"}
+
+
+@app.get("/models")
+def list_models() -> JSONResponse:
+    return JSONResponse(content={"models": models.list_models(), "selected": models.selected})
+
+
+@app.post("/models/select")
+def select_model(name: str) -> dict[str, str]:
+    models.select(name)
+    return {"status": "ok", "selected": models.selected}
 
 
 @app.post("/robot/params")

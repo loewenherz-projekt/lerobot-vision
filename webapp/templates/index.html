@@ -2,6 +2,43 @@
 <html>
 <head>
     <title>LeRobot Web</title>
+    <script>
+        async function loadModels() {
+            const resp = await fetch('/models');
+            const data = await resp.json();
+            const sel = document.getElementById('model_select');
+            sel.innerHTML = '';
+            data.models.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m; opt.textContent = m;
+                if (m === data.selected) opt.selected = true;
+                sel.appendChild(opt);
+            });
+        }
+
+        async function selectModel() {
+            const name = document.getElementById('model_select').value;
+            await fetch('/models/select?name=' + name, {method: 'POST'});
+        }
+
+        async function updatePositions() {
+            const resp = await fetch('/robot/positions');
+            const data = await resp.json();
+            document.getElementById('positions').textContent = data.positions.join(', ');
+        }
+
+        async function sendChat() {
+            const text = document.getElementById('chat_input').value;
+            const resp = await fetch('/nlp', {method:'POST', body: new URLSearchParams({text})});
+            const data = await resp.json();
+            document.getElementById('chat_log').textContent = JSON.stringify(data.actions);
+        }
+
+        window.onload = () => {
+            loadModels();
+            updatePositions();
+        };
+    </script>
 </head>
 <body>
 <h1>LeRobot Web Interface</h1>
@@ -11,7 +48,24 @@
     Side by side: <input type="checkbox" name="side_by_side">
     <button type="submit">Start</button>
 </form>
-<img src="/stream/left" width="320">
-<img src="/stream/right" width="320">
+<div>
+    <img src="/stream/left" width="320">
+    <img src="/stream/right" width="320">
+</div>
+<div>
+    <h3>Model</h3>
+    <select id="model_select" onchange="selectModel()"></select>
+</div>
+<div>
+    <h3>Robot positions</h3>
+    <span id="positions"></span>
+    <button onclick="updatePositions()">Refresh</button>
+</div>
+<div>
+    <h3>Chat</h3>
+    <input id="chat_input" type="text">
+    <button onclick="sendChat()">Send</button>
+    <pre id="chat_log"></pre>
+</div>
 </body>
 </html>
