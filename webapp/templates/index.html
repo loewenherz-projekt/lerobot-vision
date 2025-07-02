@@ -52,6 +52,19 @@
     <img src="/stream/left" width="320">
     <img src="/stream/right" width="320">
 </div>
+<h2>Calibration</h2>
+<form action="/calibration/start" method="post">
+    Board width: <input type="number" name="board_w" value="7">
+    Board height: <input type="number" name="board_h" value="6">
+    Square size: <input type="number" step="0.1" name="size" value="1.0">
+    <button type="submit">Start Calibration</button>
+</form>
+<form action="/calibration/capture" method="post">
+    <button type="submit">Capture</button>
+</form>
+<form action="/calibration/finish" method="post">
+    <button type="submit">Finish</button>
+</form>
 <div>
     <h3>Model</h3>
     <select id="model_select" onchange="selectModel()"></select>

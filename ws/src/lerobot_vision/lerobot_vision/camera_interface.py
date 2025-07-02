@@ -121,8 +121,20 @@ class StereoCamera:
 class AsyncStereoCamera(StereoCamera):  # pragma: no cover - optional helper
     """Stereo camera that captures frames on a background thread."""
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        left_idx: int = 0,
+        right_idx: int = 1,
+        config_path: str | None = None,
+        side_by_side: bool = False,
+    ) -> None:
+        if config_path is None:
+            default = Path("calibration.yaml")
+            if default.exists():
+                config_path = str(default)
+        super().__init__(
+            left_idx, right_idx, config_path=config_path, side_by_side=side_by_side
+        )
         self._frame_left: np.ndarray | None = None
         self._frame_right: np.ndarray | None = None
         self._running = True

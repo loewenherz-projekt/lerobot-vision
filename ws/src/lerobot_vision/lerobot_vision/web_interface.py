@@ -7,6 +7,7 @@ from fastapi import FastAPI, Response, Request, WebSocket
 from fastapi.responses import StreamingResponse, JSONResponse, HTMLResponse
 from pathlib import Path
 import asyncio
+import yaml
 from fastapi.templating import Jinja2Templates
 
 from .camera_interface import AsyncStereoCamera
@@ -15,6 +16,16 @@ from .nlp_node import NlpNode
 
 app = FastAPI(title="LeRobot Web")
 templates = Jinja2Templates(directory="webapp/templates")
+
+
+def save_calibration_yaml(data: dict, path: str = "calibration.yaml") -> None:
+    """Persist calibration result to a YAML file."""
+    try:
+        Path(path).write_text(yaml.safe_dump(data))
+    except Exception as exc:  # pragma: no cover - file IO optional
+        import logging
+
+        logging.error("Failed to save calibration: %s", exc)
 
 
 class CameraManager:
@@ -277,6 +288,15 @@ async def ws_frames(websocket: WebSocket, side: str) -> None:
         await websocket.send_bytes(buf)
 
 
+@app.websocket("/ws/calibration/{side}")
+async def ws_calibration_frames(websocket: WebSocket, side: str) -> None:
+    await websocket.accept()
+    while True:
+        lbuf, rbuf = manager.frames()
+        buf = lbuf if side == "left" else rbuf
+        await websocket.send_bytes(buf)
+
+
 @app.websocket("/ws/robot/positions")
 async def ws_robot_positions(websocket: WebSocket) -> None:
     await websocket.accept()
@@ -304,6 +324,7 @@ def calibration_finish() -> JSONResponse:
     result = calibration.finish()
     if result is None:
         return JSONResponse(status_code=400, content={"error": "no data"})
+    save_calibration_yaml(result)
     return JSONResponse(content=result)
 
 

@@ -1,5 +1,6 @@
 import numpy as np
 from fastapi.testclient import TestClient
+import yaml
 
 from lerobot_vision import web_interface as web
 
@@ -84,7 +85,7 @@ def test_ui_route(monkeypatch):
     assert b"LeRobot Web Interface" in resp.content
 
 
-def test_calibration_flow(monkeypatch):
+def test_calibration_flow(monkeypatch, tmp_path):
     frame = np.zeros((2, 2, 3), dtype=np.uint8)
 
     class DummyCam:
@@ -121,6 +122,14 @@ def test_calibration_flow(monkeypatch):
 
     monkeypatch.setattr(web, "AsyncStereoCamera", DummyCam)
     monkeypatch.setattr(web, "StereoCalibrator", DummyCal)
+    saved = tmp_path / "cal.yaml"
+
+    orig_save = web.save_calibration_yaml
+
+    def _save(data, path="calibration.yaml"):
+        orig_save(data, path=str(saved))
+
+    monkeypatch.setattr(web, "save_calibration_yaml", _save)
     web.manager.start()
     client = TestClient(web.app)
     resp = client.post("/calibration/start")
@@ -130,6 +139,9 @@ def test_calibration_flow(monkeypatch):
     resp = client.post("/calibration/finish")
     assert resp.status_code == 200
     assert "m1" in resp.json()
+    assert saved.exists()
+    data = yaml.safe_load(saved.read_text())
+    assert "m1" in data
     web.manager.stop()
 
 
