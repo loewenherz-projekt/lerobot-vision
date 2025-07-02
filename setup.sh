@@ -37,7 +37,7 @@ if [ $empty -ne 0 ]; then
 fi
 
 # Install system dependencies for ROS2 and Python tooling
-sudo apt update && sudo apt install -y git python3 python3-pip curl
+#sudo apt update && sudo apt install -y git python3 python3-pip curl
 
 # Install ROS 2 Humble
 if ! command -v ros2 >/dev/null; then
