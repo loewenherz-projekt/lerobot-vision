@@ -87,7 +87,9 @@ class CalibrationManager:
     def __init__(self) -> None:
         self.calibrator: StereoCalibrator | None = None
 
-    def start(self, board_w: int = 7, board_h: int = 6, size: float = 1.0) -> None:
+    def start(
+        self, board_w: int = 7, board_h: int = 6, size: float = 1.0
+    ) -> None:
         self.calibrator = StereoCalibrator((board_w, board_h), size)
 
     def add_pair(self) -> bool:
@@ -147,23 +149,56 @@ def camera_info(index: int = 0) -> JSONResponse:
 
 @app.get("/camera_modes")
 def camera_modes(index: int = 0) -> JSONResponse:
-    """Return a small list of common capture modes."""
+    """Return capture modes supported by the camera."""
     cap = cv2.VideoCapture(index)
     if not cap.isOpened():
         return Response(status_code=404)
-    modes: list[dict[str, int]] = []
-    presets = [(640, 480, 30), (1280, 720, 30), (1920, 1080, 30)]
-    for w, h, fps in presets:
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, w)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
-        cap.set(cv2.CAP_PROP_FPS, fps)
-        modes.append(
-            {
-                "width": int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
-                "height": int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-                "fps": int(cap.get(cv2.CAP_PROP_FPS)),
-            }
-        )
+
+    modes: list[dict[str, int | str]] = []
+
+    try:  # optional dependency
+        from pymediainfo import MediaInfo  # type: ignore
+
+        info = MediaInfo.parse(f"/dev/video{index}")
+        for track in info.tracks:
+            if track.track_type == "Video":
+                w = int(track.width or 0)
+                h = int(track.height or 0)
+                fps = int(float(track.frame_rate)) if track.frame_rate else 0
+                codec = track.codec_id or track.format or ""
+                if w and h:
+                    modes.append(
+                        {
+                            "width": w,
+                            "height": h,
+                            "fps": fps,
+                            "codec": codec,
+                        }
+                    )
+    except Exception:  # pragma: no cover - MediaInfo may not be installed
+        pass
+
+    if not modes:
+        resolutions = [(640, 480), (1280, 720), (1920, 1080)]
+        framerates = [15, 30, 60]
+        codecs = ["MJPG", "YUYV"]
+        for w, h in resolutions:
+            for fps in framerates:
+                for codec in codecs:
+                    cap.set(cv2.CAP_PROP_FRAME_WIDTH, w)
+                    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
+                    cap.set(cv2.CAP_PROP_FPS, fps)
+                    cap.set(
+                        cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*codec)
+                    )
+                    modes.append(
+                        {
+                            "width": int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                            "height": int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+                            "fps": int(cap.get(cv2.CAP_PROP_FPS)),
+                            "codec": codec,
+                        }
+                    )
     cap.release()
     return JSONResponse(content={"modes": modes})
 
@@ -201,11 +236,14 @@ def stop() -> dict[str, str]:
 
 @app.post("/camera_settings")
 def camera_settings(
-    width: int | None = None, height: int | None = None, fps: int | None = None
+    width: int | None = None,
+    height: int | None = None,
+    fps: int | None = None,
+    codec: str | None = None,
 ) -> dict[str, str]:
     if not manager.camera:
         return {"status": "no camera"}
-    manager.camera.set_properties(width, height, fps)
+    manager.camera.set_properties(width, height, fps, codec)
     return {"status": "ok"}
 
 
@@ -248,7 +286,9 @@ async def ws_robot_positions(websocket: WebSocket) -> None:
 
 
 @app.post("/calibration/start")
-def calibration_start(board_w: int = 7, board_h: int = 6, size: float = 1.0) -> dict[str, str]:
+def calibration_start(
+    board_w: int = 7, board_h: int = 6, size: float = 1.0
+) -> dict[str, str]:
     calibration.start(board_w, board_h, size)
     return {"status": "ready"}
 
@@ -283,7 +323,9 @@ def select_module(name: str, enable: bool = True) -> dict[str, str]:
 
 @app.get("/models")
 def list_models() -> JSONResponse:
-    return JSONResponse(content={"models": models.list_models(), "selected": models.selected})
+    return JSONResponse(
+        content={"models": models.list_models(), "selected": models.selected}
+    )
 
 
 @app.post("/models/select")
