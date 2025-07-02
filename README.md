@@ -8,11 +8,57 @@ dependencies (YOLO3D, StereoAnywhere, MoveIt etc.) are provided as Git
 submodules under `external/`.
 
 
-Before building the workspace you must fetch these submodules:
-`git submodule update --init --recursive`.
+## Step-by-step setup
 
-An optional Tkinter GUI (`VisionGUI`) can be used to preview images and run a
-simple calibration wizard.
+1. **Clone the repository**
+   ```bash
+   git clone <REPO-URL>
+   cd lerobot-vision
+   ```
+2. **Initialize the submodules**
+   ```bash
+   git submodule update --init --recursive
+   ```
+   This populates `external/OpenYOLO3D`, `external/stereoanywhere`,
+   `external/lerobot`, `external/isaac_ros_pose_estimation` and
+   `external/SuperPointSLAM3`.
+3. **Download models and weights**
+   ```bash
+   ./fetch_models.sh
+   ```
+   The script fetches the DOPE weights (YCB and HOPE) and the OpenYOLO3D
+   checkpoints into `external/checkpoints`.
+4. **Install dependencies**
+   ```bash
+   ./setup.sh
+   ```
+   Alternatively create the environment manually:
+   ```bash
+   conda env create -f environment.yml
+   conda activate lerobot-vision
+   # or
+   pip install -r requirements.txt
+   ```
+5. **Using YOLO3D & DOPE**
+   - OpenYOLO3D is included as a submodule. See the
+     [OpenYOLO3D repository](https://github.com/aminebdj/OpenYOLO3D) for
+     training instructions.
+   - DOPE comes from
+     [`isaac_ros_dope`](https://nvidia-isaac-ros.github.io/repositories_and_packages/isaac_ros_pose_estimation/isaac_ros_dope/index.html#quickstart).
+     For this project the downloaded weights are sufficient.
+6. **Run the demo**
+   ```bash
+   ./run.sh --gui --left 0 --right 1 --config path/to/calibration.yaml
+   ```
+   The GUI optionally shows raw images, depth map, masks and overlays.
+7. **Further documentation**
+   - [OpenYOLO3D](https://github.com/aminebdj/OpenYOLO3D)
+   - [Isaac ROS Pose Estimation](https://nvidia-isaac-ros.github.io/repositories_and_packages/isaac_ros_pose_estimation)
+   - [StereoAnywhere](https://github.com/bartn8/stereoanywhere)
+   - [SuperPointSLAM3](https://github.com/shahram95/SuperPointSLAM3)
+   - [LeRobot Robotics Library](https://github.com/huggingface/lerobot)
+
+
 
 An optional Tkinter GUI (`VisionGUI`) can be used to preview images, run a
 simple calibration wizard and display additional views. Rectified frames,
