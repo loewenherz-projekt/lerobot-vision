@@ -28,10 +28,56 @@
             await fetch('/models/select?name=' + name, {method: 'POST'});
         }
 
+        let joints = [];
+
         async function updatePositions() {
             const resp = await fetch('/robot/positions');
             const data = await resp.json();
-            document.getElementById('positions').textContent = data.positions.join(', ');
+            document.getElementById('positions').textContent =
+                data.positions.join(', ');
+            joints.forEach((j, idx) => {
+                if (data.positions[idx] !== undefined) {
+                    j.value = data.positions[idx];
+                    document.getElementById(j.id + '_val').textContent =
+                        j.value;
+                }
+            });
+        }
+
+        function initManual() {
+            joints = Array.from(document.querySelectorAll('.joint'));
+            joints.forEach(j => {
+                document.getElementById(j.id + '_val').textContent = j.value;
+            });
+        }
+
+        async function sendMove() {
+            const vals = joints.map(j => j.value);
+            await fetch('/robot/move?positions=' + vals.join(','),
+                {method: 'POST'});
+            updatePositions();
+        }
+
+        async function computeFK() {
+            const vals = joints.map(j => j.value);
+            const resp = await fetch('/robot/fk?joints=' + vals.join(','));
+            const data = await resp.json();
+            document.getElementById('kin_res').textContent =
+                JSON.stringify(data);
+        }
+
+        async function computeIK() {
+            const pose = document.getElementById('ik_input').value;
+            const resp = await fetch('/robot/ik?pose=' + pose);
+            const data = await resp.json();
+            if (data.joints) {
+                joints.forEach((j, i) => {
+                    j.value = data.joints[i];
+                    document.getElementById(j.id + '_val').textContent = j.value;
+                });
+            }
+            document.getElementById('kin_res').textContent =
+                JSON.stringify(data);
         }
 
         async function sendChat() {
@@ -100,6 +146,7 @@
         window.onload = () => {
             loadModels();
             updatePositions();
+            initManual();
         };
     </script>
 </head>
@@ -148,6 +195,23 @@
     <h3>Robot positions</h3>
     <span id="positions"></span>
     <button onclick="updatePositions()">Refresh</button>
+</div>
+<div>
+    <h3>Manual control</h3>
+    <div class="controls">
+        <div>J1 <input type="range" class="joint" id="j0" min="-3.14" max="3.14" step="0.1" value="0"><span id="j0_val"></span></div>
+        <div>J2 <input type="range" class="joint" id="j1" min="-3.14" max="3.14" step="0.1" value="0"><span id="j1_val"></span></div>
+        <div>J3 <input type="range" class="joint" id="j2" min="-3.14" max="3.14" step="0.1" value="0"><span id="j2_val"></span></div>
+        <div>J4 <input type="range" class="joint" id="j3" min="-3.14" max="3.14" step="0.1" value="0"><span id="j3_val"></span></div>
+        <div>J5 <input type="range" class="joint" id="j4" min="-3.14" max="3.14" step="0.1" value="0"><span id="j4_val"></span></div>
+        <div>J6 <input type="range" class="joint" id="j5" min="-3.14" max="3.14" step="0.1" value="0"><span id="j5_val"></span></div>
+    </div>
+    <button onclick="sendMove()">Move</button>
+    <button onclick="computeFK()">FK</button>
+    <br>
+    Pose: <input id="ik_input" type="text" placeholder="x,y,z,rx,ry,rz">
+    <button onclick="computeIK()">IK</button>
+    <pre id="kin_res"></pre>
 </div>
 <div>
     <h3>Chat</h3>
