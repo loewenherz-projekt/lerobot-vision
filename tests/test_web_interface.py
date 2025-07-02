@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 import yaml
 
 from lerobot_vision import web_interface as web
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 
 def test_list_cameras(monkeypatch):
@@ -281,3 +282,56 @@ def test_fk_ik_endpoints():
     resp = client.get("/robot/ik", params={"pose": pose})
     assert resp.status_code == 200
     assert resp.json()["joints"] == [1.0, 2.0, 3.0, 0.0, 0.0, 0.0]
+
+
+def test_nlp_planner_integration(monkeypatch):
+    class DummyNlp:
+        def _call_llm(self, text):
+            return [{"target_pose": [0, 0, 0]}]
+
+    class DummyPlanner:
+        def __init__(self):
+            pass
+
+        def _plan_actions(self, actions_json):
+            traj = JointTrajectory()
+            traj.points = []
+            pt = JointTrajectoryPoint()
+            pt.positions = [1.0, 2.0]
+            traj.points.append(pt)
+            return traj
+
+    called = {}
+
+    def dummy_move(pos):
+        called["pos"] = pos
+
+    monkeypatch.setattr(web, "NlpNode", lambda: DummyNlp())
+    monkeypatch.setattr(web, "PlannerNode", DummyPlanner)
+    monkeypatch.setattr(web.robot, "move", dummy_move)
+
+    client = TestClient(web.app)
+    resp = client.post("/nlp", params={"text": "move"})
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "ok"
+    assert called.get("pos") == [1.0, 2.0]
+
+
+def test_nlp_direct_move(monkeypatch):
+    class DummyNlp:
+        def _call_llm(self, text):
+            return [{"joints": [3, 4]}]
+
+    called = {}
+
+    def dummy_move(pos):
+        called["pos"] = pos
+
+    monkeypatch.setattr(web, "NlpNode", lambda: DummyNlp())
+    monkeypatch.setattr(web.robot, "move", dummy_move)
+
+    client = TestClient(web.app)
+    resp = client.post("/nlp", params={"text": "move"})
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "ok"
+    assert called.get("pos") == [3, 4]
