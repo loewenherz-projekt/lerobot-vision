@@ -12,7 +12,7 @@ submodules under `external/`.
 
 1. **Clone the repository**
    ```bash
-   git clone <REPO-URL>
+   git clone https://github.com/loewenherz-projekt/lerobot-vision.git
    cd lerobot-vision
    ```
 2. **Initialize the submodules**
