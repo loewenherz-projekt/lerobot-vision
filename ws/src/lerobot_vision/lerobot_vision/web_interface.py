@@ -14,6 +14,8 @@ from fastapi.templating import Jinja2Templates
 from .camera_interface import AsyncStereoCamera
 from .stereo_calibrator import StereoCalibrator
 from .nlp_node import NlpNode
+from .planner_node import PlannerNode
+import json
 from .kinematics import (
     forward_kinematics,
     inverse_kinematics,
@@ -477,7 +479,27 @@ def robot_params(payload: str) -> dict[str, str]:
 def nlp(text: str) -> JSONResponse:
     node = NlpNode()
     actions = node._call_llm(text)
-    return JSONResponse(content={"actions": actions})
+    executed = False
+    try:
+        for act in actions if isinstance(actions, list) else [actions]:
+            if not isinstance(act, dict):
+                continue
+            if "joints" in act or "positions" in act:
+                robot.move(act.get("joints") or act.get("positions"))
+                executed = True
+            elif "target_pose" in act:
+                try:
+                    planner = PlannerNode()
+                    traj = planner._plan_actions(json.dumps(act))
+                    for point in getattr(traj, "points", []):
+                        robot.move(list(point.positions))
+                        executed = True
+                except Exception as exc:  # pragma: no cover - planning optional
+                    logging.error("Planning failed: %s", exc)
+    except Exception as exc:  # pragma: no cover - runtime
+        logging.error("NLP execution error: %s", exc)
+    status = "ok" if executed else "error"
+    return JSONResponse(content={"actions": actions, "status": status})
 
 
 @app.post("/inference/test")
