@@ -39,6 +39,33 @@ class StereoCamera:
         self.left_cap = cv2.VideoCapture(left_idx)
         self.right_cap = None if side_by_side else cv2.VideoCapture(right_idx)
 
+    def set_properties(
+        self,
+        width: int | None = None,
+        height: int | None = None,
+        fps: int | None = None,
+    ) -> None:
+        """Set basic capture properties on both cameras."""
+        if width is not None:
+            self.left_cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+            if self.right_cap is not None:
+                self.right_cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+        if height is not None:
+            self.left_cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+            if self.right_cap is not None:
+                self.right_cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        if fps is not None:
+            self.left_cap.set(cv2.CAP_PROP_FPS, fps)
+            if self.right_cap is not None:
+                self.right_cap.set(cv2.CAP_PROP_FPS, fps)
+
+    def get_properties(self) -> dict[str, int]:
+        """Return capture properties of the left camera."""
+        width = int(self.left_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(self.left_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps = int(self.left_cap.get(cv2.CAP_PROP_FPS))
+        return {"width": width, "height": height, "fps": fps}
+
     def get_frames(self) -> Tuple[np.ndarray, np.ndarray]:
         """Retrieve frames from both cameras.
 
