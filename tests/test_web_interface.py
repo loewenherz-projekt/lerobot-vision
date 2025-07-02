@@ -335,3 +335,32 @@ def test_nlp_direct_move(monkeypatch):
     assert resp.status_code == 200
     assert resp.json()["status"] == "ok"
     assert called.get("pos") == [3, 4]
+
+
+def test_ws_endpoints(monkeypatch):
+    frame = np.zeros((1, 1, 3), dtype=np.uint8)
+
+    class DummyCam:
+        def get_frames(self):
+            return frame, frame
+
+        def release(self):
+            pass
+
+    class DummyVis:
+        def compute(self, l, r):
+            return frame, frame, np.zeros((1, 1), dtype=float), [], frame
+
+    monkeypatch.setattr(web.manager, "camera", DummyCam())
+    monkeypatch.setattr(web, "vis_helper", DummyVis())
+
+    client = TestClient(web.app)
+    with client.websocket_connect("/ws/overlay") as ws:
+        data = ws.receive_bytes()
+        assert data
+    with client.websocket_connect("/ws/depth") as ws:
+        data = ws.receive_bytes()
+        assert data
+    with client.websocket_connect("/ws/rectified/left") as ws:
+        data = ws.receive_bytes()
+        assert data

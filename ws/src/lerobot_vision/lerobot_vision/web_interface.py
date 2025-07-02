@@ -15,6 +15,11 @@ from .camera_interface import AsyncStereoCamera
 from .stereo_calibrator import StereoCalibrator
 from .nlp_node import NlpNode
 from .planner_node import PlannerNode
+from .image_rectifier import ImageRectifier
+from .depth_engine import DepthEngine
+from .yolo3d_engine import Yolo3DEngine
+from .pose_estimator import PoseEstimator
+from .object_localizer import localize_objects
 import json
 from .kinematics import (
     forward_kinematics,
@@ -119,6 +124,133 @@ class RobotManager:
 
 
 robot = RobotManager()
+
+
+class VisualizationHelper:
+    """Compute rectified, depth and overlay views similarly to ``VisualizationNode``."""
+
+    def __init__(self) -> None:
+        self.rectifier: ImageRectifier | None = None
+        try:
+            self.depth_engine = DepthEngine(use_cuda=False)
+        except Exception:  # pragma: no cover - optional deps
+            self.depth_engine = None
+        try:
+            ckpt = Path(__file__).resolve().parent / "resources" / "checkpoint"
+            self.yolo = Yolo3DEngine(str(ckpt))
+        except Exception:  # pragma: no cover - optional deps
+            self.yolo = None
+        try:
+            self.pose = PoseEstimator()
+        except Exception:  # pragma: no cover - optional deps
+            self.pose = None
+
+    def _draw_overlay(
+        self,
+        image: np.ndarray,
+        masks: list[np.ndarray],
+        labels: list[str],
+        depth: np.ndarray,
+        poses: list[tuple[np.ndarray, np.ndarray]] | None = None,
+    ) -> np.ndarray:
+        """Draw segmentation overlays."""
+        fx = manager.camera.camera_matrix[0, 0]
+        fy = manager.camera.camera_matrix[1, 1]
+        cx = manager.camera.camera_matrix[0, 2]
+        cy = manager.camera.camera_matrix[1, 2]
+
+        def _proj(pt: np.ndarray) -> tuple[int, int]:
+            u = int(pt[0] * fx / pt[2] + cx)
+            v = int(pt[1] * fy / pt[2] + cy)
+            return u, v
+
+        for idx, (mask, label) in enumerate(zip(masks, labels)):
+            ys, xs = np.nonzero(mask > 0)
+            if len(xs) == 0:
+                continue
+            x0, x1 = xs.min(), xs.max()
+            y0, y1 = ys.min(), ys.max()
+            u = float(np.median(xs))
+            v = float(np.median(ys))
+            z = float(np.median(depth[ys, xs]))
+            x = (u - cx) * z / fx
+            y = (v - cy) * z / fy
+            cv2.rectangle(image, (x0, y0), (x1, y1), (0, 255, 0), 2)
+            cv2.putText(
+                image,
+                label,
+                (int(x0), int(y0) - 10),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 255, 0),
+                1,
+            )
+            info = f"{z:.2f}m {x:+.2f},{y:+.2f}"
+            cv2.putText(
+                image,
+                info,
+                (int(x0), int(y1) + 15),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 255, 0),
+                1,
+            )
+            if poses and idx < len(poses) and poses[idx] is not None:
+                _, quat = poses[idx]
+                xq, yq, zq, wq = quat
+                rot = np.array(
+                    [
+                        [1 - 2 * (yq ** 2 + zq ** 2), 2 * (xq * yq - zq * wq), 2 * (xq * zq + yq * wq)],
+                        [2 * (xq * yq + zq * wq), 1 - 2 * (xq ** 2 + zq ** 2), 2 * (yq * zq - xq * wq)],
+                        [2 * (xq * zq - yq * wq), 2 * (yq * zq + xq * wq), 1 - 2 * (xq ** 2 + yq ** 2)],
+                    ]
+                )
+                center = np.array([x, y, z], dtype=float)
+                axes = rot @ (0.05 * np.eye(3))
+                for axis, color in zip(axes.T, [(0, 0, 255), (0, 255, 0), (255, 0, 0)]):
+                    pt2 = _proj(center + axis)
+                    cv2.line(image, (int(u), int(v)), pt2, color, 2)
+        return image
+
+    def compute(self, left: np.ndarray, right: np.ndarray):
+        if self.rectifier is None:
+            h, w = left.shape[:2]
+            self.rectifier = ImageRectifier(
+                manager.camera.camera_matrix,
+                manager.camera.dist_coeffs,
+                manager.camera.camera_matrix,
+                manager.camera.dist_coeffs,
+                (w, h),
+            )
+        left_r, right_r = self.rectifier.rectify(left, right)
+        depth = np.zeros(left_r.shape[:2], dtype=float)
+        disp = None
+        if self.depth_engine:
+            try:
+                depth, disp = self.depth_engine.compute_depth(
+                    left_r, right_r, return_disparity=True
+                )
+            except Exception:
+                pass
+        masks: list[np.ndarray] = []
+        labels: list[str] = []
+        if self.yolo and depth is not None:
+            try:
+                masks, labels = self.yolo.segment([left_r], depth)
+            except Exception:
+                masks = []
+                labels = []
+        poses = None
+        if self.pose and masks:
+            try:
+                poses = self.pose.estimate(left_r)
+            except Exception:
+                poses = None
+        overlay = self._draw_overlay(left_r.copy(), masks, labels, depth, poses)
+        return left_r, right_r, depth, masks, overlay
+
+
+vis_helper = VisualizationHelper()
 
 
 class ModelManager:
@@ -371,6 +503,61 @@ async def ws_calibration_frames(websocket: WebSocket, side: str) -> None:
         lbuf, rbuf = manager.frames()
         buf = lbuf if side == "left" else rbuf
         await websocket.send_bytes(buf)
+
+
+@app.websocket("/ws/rectified/{side}")
+async def ws_rectified(websocket: WebSocket, side: str) -> None:
+    await websocket.accept()
+    while True:
+        left, right = manager.frames()
+        left_r, right_r, _, _, _ = vis_helper.compute(left, right)
+        frame = left_r if side == "left" else right_r
+        _, buf = cv2.imencode(".jpg", frame)
+        await websocket.send_bytes(buf.tobytes())
+
+
+@app.websocket("/ws/depth")
+async def ws_depth(websocket: WebSocket) -> None:
+    await websocket.accept()
+    while True:
+        left, right = manager.frames()
+        left_r, _right_r, depth, _, _ = vis_helper.compute(left, right)
+        dnorm = cv2.normalize(depth, None, 0, 255, cv2.NORM_MINMAX)
+        dcol = cv2.applyColorMap(dnorm.astype(np.uint8), cv2.COLORMAP_JET)
+        _, buf = cv2.imencode(".jpg", dcol)
+        await websocket.send_bytes(buf.tobytes())
+
+
+@app.websocket("/ws/masks")
+async def ws_masks(websocket: WebSocket) -> None:
+    await websocket.accept()
+    while True:
+        left, right = manager.frames()
+        left_r, _right_r, _depth, masks, _overlay = vis_helper.compute(left, right)
+        mask_img = np.zeros_like(left_r)
+        palette = [
+            (255, 0, 0),
+            (0, 255, 0),
+            (0, 0, 255),
+            (255, 255, 0),
+            (255, 0, 255),
+            (0, 255, 255),
+        ]
+        for idx, mask in enumerate(masks):
+            color = palette[idx % len(palette)]
+            mask_img[mask > 0] = color
+        _, buf = cv2.imencode(".jpg", mask_img)
+        await websocket.send_bytes(buf.tobytes())
+
+
+@app.websocket("/ws/overlay")
+async def ws_overlay(websocket: WebSocket) -> None:
+    await websocket.accept()
+    while True:
+        left, right = manager.frames()
+        _left_r, _right_r, _depth, _masks, overlay = vis_helper.compute(left, right)
+        _, buf = cv2.imencode(".jpg", overlay)
+        await websocket.send_bytes(buf.tobytes())
 
 
 @app.websocket("/ws/robot/positions")
