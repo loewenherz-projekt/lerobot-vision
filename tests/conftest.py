@@ -96,6 +96,7 @@ for mod_name in [
     "vision_msgs.msg",
     "std_msgs.msg",
     "trajectory_msgs.msg",
+    "geometry_msgs.msg",
 ]:
     if mod_name not in sys.modules:
         m = types.ModuleType(mod_name)
@@ -111,4 +112,5 @@ for mod_name in [
         m.String = Msg
         m.JointTrajectory = Msg
         m.JointTrajectoryPoint = Msg
+        m.Pose = Msg
         sys.modules[mod_name] = m

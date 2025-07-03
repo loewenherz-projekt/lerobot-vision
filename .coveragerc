@@ -1,3 +1,4 @@
 [run]
 omit =
     ws/src/lerobot_vision/lerobot_vision/calibrate_cli.py
+    ws/src/lerobot_vision/lerobot_vision/web_interface.py
